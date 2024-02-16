@@ -1,9 +1,10 @@
 [package]
 name = "del-fem"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
+repository = "https://github.com/nobuyuki83/del-fem/"
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,3 +14,7 @@ num-traits = "0.2.18"
 nalgebra = "0.32.3"
 # del-geo = {path="../del-geo"}
 del-geo = "0.1.18"
+
+[dev-dependencies]
+# del-msh = {path="../del-msh"}
+del-msh = "0.1.25"
