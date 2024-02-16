@@ -28,7 +28,7 @@ where T: num_traits::Float + 'static + Copy + std::ops::MulAssign + std::ops::Ad
     let two = 2_f32.as_();
     let half = 0.5_f32.as_();
 
-    let mut Gd: [[T; 3]; 3] = [ // undeformed edge vector
+    let mut Gd: [[T; 3]; 3] = [ // un-deformed edge vector
         [P[1][0] - P[0][0], P[1][1] - P[0][1], P[1][2] - P[0][2]],
         [P[2][0] - P[0][0], P[2][1] - P[0][1], P[2][2] - P[0][2]],
         [zero, zero, zero]];

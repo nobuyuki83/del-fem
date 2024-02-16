@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 num-traits = "0.2.18"
 nalgebra = "0.32.3"
-del-geo = {path="../del-geo"}
+# del-geo = {path="../del-geo"}
+del-geo = "0.1.18"
