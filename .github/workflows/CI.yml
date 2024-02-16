@@ -37,4 +37,6 @@ jobs:
     needs: [ linux ]
     steps:
       - run: |
+          pwd
+          ls -al
           cargo publish
