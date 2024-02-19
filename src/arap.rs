@@ -1,30 +1,5 @@
 use num_traits::AsPrimitive;
 
-pub fn mesh_laplacian_cotangent<T>(
-    tri2vtx: &[usize],
-    vtx2xyz: &[T],
-    row2idx: &[usize],
-    idx2col: &[usize],
-    row2val: &mut [T],
-    idx2val: &mut [T],
-    merge_buffer: &mut Vec<usize>)
-    where T: num_traits::Float + 'static + std::ops::AddAssign,
-          f64: num_traits::AsPrimitive<T>
-{
-    for node2vtx in tri2vtx.chunks(3) {
-        let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let v0: &[T; 3] = &vtx2xyz[i0 * 3..i0 * 3 + 3].try_into().unwrap();
-        let v1: &[T; 3] = &vtx2xyz[i1 * 3..i1 * 3 + 3].try_into().unwrap();
-        let v2: &[T; 3] = &vtx2xyz[i2 * 3..i2 * 3 + 3].try_into().unwrap();
-        let emat: [T; 9] = del_geo::tri3::emat_cotangent_laplacian(v0, v1, v2);
-        crate::merge::csrdia(
-            node2vtx, node2vtx, &emat,
-            row2idx, idx2col,
-            row2val, idx2val,
-            merge_buffer);
-    }
-}
-
 pub fn optimal_rotation_for_arap_spoke<T>(
     i_vtx: usize,
     adj2vtx: &[usize],
@@ -69,7 +44,7 @@ fn test_optimal_rotation_for_arap() {
         let mut row2val = vec!(0f64; num_vtx);
         let mut idx2val = vec!(0f64; idx2col.len());
         let mut merge_buffer = vec!(0usize; 0);
-        mesh_laplacian_cotangent(
+        crate::laplace_tri3::merge_from_mesh(
             &tri2vtx, &vtx2xyz_ini,
             &row2idx, &idx2col,
             &mut row2val, &mut idx2val, &mut merge_buffer);
@@ -172,7 +147,7 @@ fn test_energy_arap_spoke() {
         let mut row2val = vec!(0f64; num_vtx);
         let mut idx2val = vec!(0f64; idx2vtx.len());
         let mut merge_buffer = vec!(0usize; 0);
-        mesh_laplacian_cotangent(
+        crate::laplace_tri3::merge_from_mesh(
             &tri2vtx, &vtx2xyz_ini,
             &vtx2idx, &idx2vtx,
             &mut row2val, &mut idx2val, &mut merge_buffer);
@@ -475,7 +450,7 @@ pub fn residual_arap_spoke_rim<T>(
 
 #[cfg(test)]
 mod tests {
-    use crate::mesh_laplacian::energy_arap_spoke_rim;
+    use crate::arap::energy_arap_spoke_rim;
 
     fn mydef(vtx2xyz_ini: &[f64]) -> Vec<f64> {
         let num_vtx = vtx2xyz_ini.len() / 3;
@@ -509,7 +484,7 @@ mod tests {
             vtx2rot0
         };
         let vtx2xyz0_def = mydef(&vtx2xyz0_ini);
-        let w0 = energy_arap_spoke_rim(&tri2vtx0, &vtx2xyz0_ini, &vtx2xyz0_def, &vtx2rot0);
+        let w0 = crate::arap::energy_arap_spoke_rim(&tri2vtx0, &vtx2xyz0_ini, &vtx2xyz0_def, &vtx2rot0);
         //
         let (tri2vtx1, vtx2xyz1_ini)
             = del_msh::trimesh3_primitive::capsule_yup::<f64>(
@@ -524,7 +499,7 @@ mod tests {
             vtx2rot1
         };
         let vtx2xyz1_def = mydef(&vtx2xyz1_ini);
-        let w1 = energy_arap_spoke_rim(&tri2vtx1, &vtx2xyz1_ini, &vtx2xyz1_def, &vtx2rot1);
+        let w1 = crate::arap::energy_arap_spoke_rim(&tri2vtx1, &vtx2xyz1_ini, &vtx2xyz1_def, &vtx2rot1);
         //
         let (tri2vtx2, vtx2xyz2_ini)
             = del_msh::trimesh3_primitive::capsule_yup::<f64>(
@@ -539,7 +514,7 @@ mod tests {
             vtx2rot2
         };
         let vtx2xyz2_def = mydef(&vtx2xyz2_ini);
-        let w2 = energy_arap_spoke_rim(&tri2vtx2, &vtx2xyz2_ini, &vtx2xyz2_def, &vtx2rot2);
+        let w2 = crate::arap::energy_arap_spoke_rim(&tri2vtx2, &vtx2xyz2_ini, &vtx2xyz2_def, &vtx2rot2);
         assert!((w0-w1).abs()<w1*0.01);
         assert!((w1-w2).abs()<w2*0.004);
     }

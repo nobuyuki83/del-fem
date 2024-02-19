@@ -12,6 +12,8 @@ license = "MIT"
 [dependencies]
 num-traits = "0.2.18"
 nalgebra = "0.32.3"
+itertools = "0.12.1"
+
 # del-geo = {path="../del-geo"}
 del-geo = "0.1.18"
 

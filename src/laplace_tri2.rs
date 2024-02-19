@@ -12,10 +12,8 @@ pub fn ddw_<T>(
     let area = del_geo::tri2::area_(p0, p1, p2);
     let (dldx, _) = del_geo::tri2::dldx_(p0, p1, p2);
     let mut ddw = [[[T::zero();1]; N_NODE]; N_NODE];
-    for ino in 0..N_NODE {
-        for jno in 0..N_NODE {
-            ddw[ino][jno][0] = alpha * area * (dldx[0][ino] * dldx[0][jno] + dldx[1][ino] * dldx[1][jno]);
-        }
+    for (ino, jno) in itertools::iproduct!(0..3, 0..3) {
+        ddw[ino][jno][0] = alpha * area * (dldx[0][ino] * dldx[0][jno] + dldx[1][ino] * dldx[1][jno]);
     }
     ddw
 }

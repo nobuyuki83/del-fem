@@ -1,4 +1,4 @@
-pub fn add_weighted_emat<T, const NNO: usize>(
+pub fn add_weighted_emat_2d<T, const NNO: usize>(
     emat: &mut [[[T; 4]; NNO]; NNO],
     lambda: T,
     myu: T,
@@ -6,16 +6,14 @@ pub fn add_weighted_emat<T, const NNO: usize>(
     w: T)
     where T: num_traits::Float + std::ops::AddAssign
 {
-    for ino in 0..NNO {
-        for jno in 0..NNO {
-            emat[ino][jno][0] += w * (lambda + myu) * dldx[0][ino] * dldx[0][jno];
-            emat[ino][jno][1] += w * (lambda * dldx[0][ino] * dldx[1][jno] + myu * dldx[0][jno] * dldx[1][ino]);
-            emat[ino][jno][2] += w * (lambda * dldx[1][ino] * dldx[0][jno] + myu * dldx[1][jno] * dldx[0][ino]);
-            emat[ino][jno][3] += w * (lambda + myu) * dldx[1][ino] * dldx[1][jno];
-            let dtmp1 = w * myu * (dldx[1][ino] * dldx[1][jno] + dldx[0][ino] * dldx[0][jno]);
-            emat[ino][jno][0] += dtmp1;
-            emat[ino][jno][3] += dtmp1;
-        }
+    for (ino, jno) in itertools::iproduct!(0..NNO, 0..NNO) {
+        emat[ino][jno][0] += w * (lambda + myu) * dldx[0][ino] * dldx[0][jno];
+        emat[ino][jno][1] += w * (lambda * dldx[0][ino] * dldx[1][jno] + myu * dldx[0][jno] * dldx[1][ino]);
+        emat[ino][jno][2] += w * (lambda * dldx[1][ino] * dldx[0][jno] + myu * dldx[1][jno] * dldx[0][ino]);
+        emat[ino][jno][3] += w * (lambda + myu) * dldx[1][ino] * dldx[1][jno];
+        let dtmp1 = w * myu * (dldx[1][ino] * dldx[1][jno] + dldx[0][ino] * dldx[0][jno]);
+        emat[ino][jno][0] += dtmp1;
+        emat[ino][jno][3] += dtmp1;
     }
 }
 
@@ -31,7 +29,7 @@ pub fn emat_tri2<T>(
     let area = del_geo::tri2::area_(p0, p1, p2);
     let (dldx, _) = del_geo::tri2::dldx_(p0, p1, p2);
     let mut emat = [[[T::zero(); 4]; 3]; 3];
-    add_weighted_emat::<T, 3>(
+    add_weighted_emat_2d::<T, 3>(
         &mut emat,
         lambda, myu, dldx, area);
     emat
