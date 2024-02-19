@@ -63,8 +63,7 @@ pub fn blkcsr<T,const BLKSIZE: usize, const N_NODE: usize>(
             let j_col = idx2col[ij_idx];
             col2idx[j_col] = ij_idx;
         }
-        for jnode in 0..node2col.len() {
-            let j_col = node2col[jnode];
+        for (jnode, &j_col) in node2col.iter().enumerate() {
             assert!(j_col < num_row);
             assert!(col2idx[j_col] < idx2col.len());
             let ij_idx = col2idx[j_col];

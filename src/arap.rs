@@ -450,7 +450,6 @@ pub fn residual_arap_spoke_rim<T>(
 
 #[cfg(test)]
 mod tests {
-    use crate::arap::energy_arap_spoke_rim;
 
     fn mydef(vtx2xyz_ini: &[f64]) -> Vec<f64> {
         let num_vtx = vtx2xyz_ini.len() / 3;

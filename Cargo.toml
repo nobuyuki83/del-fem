@@ -1,6 +1,6 @@
 [package]
 name = "del-fem"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
@@ -11,11 +11,11 @@ license = "MIT"
 
 [dependencies]
 num-traits = "0.2.18"
-nalgebra = "0.32.3"
+nalgebra = "0.32.4"
 itertools = "0.12.1"
 
 # del-geo = {path="../del-geo"}
-del-geo = "0.1.18"
+del-geo = "0.1.19"
 
 [dev-dependencies]
 # del-msh = {path="../del-msh"}
