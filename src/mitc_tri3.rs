@@ -208,14 +208,43 @@ fn test_w_dw_ddw_plate_bending() {
             &p, &u1,
             thickness1, lambda1, myu1);
         {
-            let v0 = (w1-w0)/eps;
+            let v0 = (w1 - w0) / eps;
             let v1 = dw0[ino][idof];
-            assert!((v0-v1).abs()<(1.+v1.abs())*1.0e-4);
+            assert!((v0 - v1).abs() < (1. + v1.abs()) * 1.0e-4);
         }
         for (jno, jdof) in itertools::iproduct!(0..3, 0..3) {
             let v0 = (dw1[jno][jdof] - dw0[jno][jdof]) / eps;
-            let v1 = ddw0[ino][jno][idof*3+jdof];
-            assert!((v0-v1).abs()<(1.+v1.abs())*1.0e-4);
+            let v1 = ddw0[ino][jno][idof * 3 + jdof];
+            assert!((v0 - v1).abs() < (1. + v1.abs()) * 1.0e-4);
+        }
+    }
+}
+
+pub fn mass_lumped_plate_bending<T>(
+    tri2vtx: &[usize],
+    vtx2xy: &[T],
+    thick: T,
+    rho: T,
+    vtx2mass: &mut [T])
+where T: num_traits::Float + std::ops::AddAssign
+{
+    assert_eq!(vtx2mass.len(), vtx2xy.len() / 2 * 3);
+    vtx2mass.fill(T::zero());
+    let three = T::one() + T::one() + T::one();
+    let four = three + T::one();
+    let twelve = three * four;
+    for node2vtx in tri2vtx.chunks(3) {
+        let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
+        let p0 = vtx2xy[i0*2..i0*2+2].try_into().unwrap();
+        let p1 = vtx2xy[i1 * 2..i1*2+2].try_into().unwrap();
+        let p2 = vtx2xy[i2 * 2..i2*2+2].try_into().unwrap();
+        let a012 = del_geo::tri2::area_(p0, p1, p2);
+        let m0 = a012 / three * rho * thick;
+        let m1 = a012 / three * rho * thick * thick * thick / twelve;
+        for i_vtx in node2vtx {
+            vtx2mass[i_vtx * 3 + 0] += m0;
+            vtx2mass[i_vtx * 3 + 1] += m1;
+            vtx2mass[i_vtx * 3 + 2] += m1;
         }
     }
 }
