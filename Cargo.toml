@@ -10,13 +10,9 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num-traits = "0.2.18"
-nalgebra = "0.32.4"
-itertools = "0.12.1"
+num-traits = "0.2.19"
+nalgebra = "0.32.6"
+itertools = "0.13.0"
 
-# del-geo = {path="../del-geo"}
-del-geo = "0.1.20"
-
-[dev-dependencies]
-# del-msh = {path="../del-msh"}
-del-msh = "0.1.25"
+del-geo = {path="../del-geo"}
+del-msh = {path="../del-msh"}
