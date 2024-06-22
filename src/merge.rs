@@ -11,6 +11,8 @@ pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
     T: std::ops::AddAssign + Copy,
 {
     let num_blk = row2idx.len() - 1;
+    assert_eq!(idx2val.len(), idx2col.len()*BLKSIZE);
+    assert_eq!(row2val.len(), num_blk*BLKSIZE);
     merge_buffer.resize(num_blk, usize::MAX);
     let col2idx = merge_buffer;
     for inode in 0..node2row.len() {

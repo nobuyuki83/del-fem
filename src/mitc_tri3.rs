@@ -321,7 +321,7 @@ pub fn mass_lumped_plate_bending<T>(
         let m0 = a012 / three * rho * thick;
         let m1 = a012 / three * rho * thick * thick * thick / twelve;
         for i_vtx in node2vtx {
-            vtx2mass[i_vtx * 3 + 0] += m0;
+            vtx2mass[i_vtx * 3] += m0;
             vtx2mass[i_vtx * 3 + 1] += m1;
             vtx2mass[i_vtx * 3 + 2] += m1;
         }

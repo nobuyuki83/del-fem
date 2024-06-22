@@ -16,3 +16,4 @@ itertools = "0.13.0"
 
 del-geo = {path="../del-geo"}
 del-msh = {path="../del-msh"}
+del-ls = {path="../del-ls"}

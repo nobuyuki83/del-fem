@@ -8,8 +8,8 @@ pub fn optimal_rotation_for_arap_spoke<T>(
     adj2weight: &[T],
     weight_scale: T,
 ) -> nalgebra::Matrix3<T>
-where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    where
+        T: nalgebra::RealField + Copy + std::ops::AddAssign,
 {
     let p0 = &vtx2xyz_ini[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
     let p1 = &vtx2xyz_def[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
@@ -34,27 +34,38 @@ where
     del_geo::mat3::rotational_component(&a)
 }
 
+
+pub fn values_of_sparse_matrix_laplacian(
+    tri2vtx: &[usize],
+    vtx2xyz: &[f64],
+    vtx2idx: &[usize],
+    idx2vtx: &[usize])
+    -> (Vec<f64>, Vec<f64>)
+{
+    let num_vtx = vtx2xyz.len() / 3;
+    let mut row2val = vec![0f64; num_vtx];
+    let mut idx2val = vec![0f64; idx2vtx.len()];
+    let mut merge_buffer = vec![0usize; 0];
+    crate::laplace_tri3::merge_from_mesh(
+        tri2vtx,
+        vtx2xyz,
+        vtx2idx,
+        idx2vtx,
+        &mut row2val,
+        &mut idx2val,
+        &mut merge_buffer,
+    );
+    (row2val, idx2val)
+}
+
 #[test]
 fn test_optimal_rotation_for_arap() {
     let (tri2vtx, vtx2xyz_ini) = del_msh::trimesh3_primitive::capsule_yup(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
     let (row2idx, idx2col) =
         del_msh::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
-    let (_row2val, idx2val) = {
-        let mut row2val = vec![0f64; num_vtx];
-        let mut idx2val = vec![0f64; idx2col.len()];
-        let mut merge_buffer = vec![0usize; 0];
-        crate::laplace_tri3::merge_from_mesh(
-            tri2vtx.as_slice(),
-            vtx2xyz_ini.as_slice(),
-            &row2idx,
-            &idx2col,
-            &mut row2val,
-            &mut idx2val,
-            &mut merge_buffer,
-        );
-        (row2val, idx2val)
-    };
+    let (_row2val, idx2val) = values_of_sparse_matrix_laplacian(
+        tri2vtx.as_slice(), vtx2xyz_ini.as_slice(), &row2idx, &idx2col);
     let mut vtx2xyz_def = vtx2xyz_ini.clone();
     let r0 = {
         let a_mat =
@@ -96,8 +107,8 @@ fn energy_par_vtx_arap_spoke<T>(
     weight_scale: T,
     rot_mat: &nalgebra::Matrix3<T>,
 ) -> T
-where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    where
+        T: nalgebra::RealField + Copy + std::ops::AddAssign,
 {
     let p0 = &vtx2xyz_ini[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
     let p1 = &vtx2xyz_def[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
@@ -125,8 +136,8 @@ pub fn energy_arap_spoke<T>(
     idx2val: &[T],
     vtx2rot: &[T],
 ) -> T
-where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    where
+        T: nalgebra::RealField + Copy + std::ops::AddAssign,
 {
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);
@@ -154,21 +165,8 @@ fn test_energy_arap_spoke() {
     let num_vtx = vtx2xyz_ini.len() / 3;
     let (vtx2idx, idx2vtx) =
         del_msh::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
-    let (_row2val, idx2val) = {
-        let mut row2val = vec![0f64; num_vtx];
-        let mut idx2val = vec![0f64; idx2vtx.len()];
-        let mut merge_buffer = vec![0usize; 0];
-        crate::laplace_tri3::merge_from_mesh(
-            tri2vtx.as_slice(),
-            vtx2xyz_ini.as_slice(),
-            &vtx2idx,
-            &idx2vtx,
-            &mut row2val,
-            &mut idx2val,
-            &mut merge_buffer,
-        );
-        (row2val, idx2val)
-    };
+    let (_row2val, idx2val) = values_of_sparse_matrix_laplacian(
+        tri2vtx.as_slice(), vtx2xyz_ini.as_slice(), &vtx2idx, &idx2vtx);
     let vtx2xyz_def = {
         let mut vtx2xyz_def = vec![0f64; vtx2xyz_ini.len()];
         for i_vtx in 0..num_vtx {
@@ -346,46 +344,48 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     }
 }
 
+struct CornerVertices<'a, T> {
+    p0: &'a nalgebra::Vector3<T>,
+    p1: &'a nalgebra::Vector3<T>,
+    p2: &'a nalgebra::Vector3<T>,
+}
+
 fn wdw_arap_spoke_rim<T>(
-    p0: &nalgebra::Vector3<T>,
-    p1: &nalgebra::Vector3<T>,
-    p2: &nalgebra::Vector3<T>,
-    q0: &nalgebra::Vector3<T>,
-    q1: &nalgebra::Vector3<T>,
-    q2: &nalgebra::Vector3<T>,
+    s: CornerVertices<T>,
+    e: CornerVertices<T>,
     rot0: &nalgebra::Matrix3<T>,
     rot1: &nalgebra::Matrix3<T>,
     rot2: &nalgebra::Matrix3<T>,
 ) -> (T, [nalgebra::Vector3<T>; 3])
-where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
-    f64: AsPrimitive<T>,
+    where
+        T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
+        f64: AsPrimitive<T>,
 {
-    let cots = del_geo::tri3::cot_(p0.as_ref(), p1.as_ref(), p2.as_ref());
+    let cots = del_geo::tri3::cot_(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
     let mut w = T::zero();
     {
         let coeff: T = (0.25f64 / 3.0f64).as_();
-        let d12_0 = (q2 - q1) - rot0 * (p2 - p1);
-        let d12_1 = (q2 - q1) - rot1 * (p2 - p1);
-        let d12_2 = (q2 - q1) - rot2 * (p2 - p1);
+        let d12_0 = (e.p2 - e.p1) - rot0 * (s.p2 - s.p1);
+        let d12_1 = (e.p2 - e.p1) - rot1 * (s.p2 - s.p1);
+        let d12_2 = (e.p2 - e.p1) - rot2 * (s.p2 - s.p1);
         w += coeff * cots[0] * (d12_0.norm_squared() + d12_2.norm_squared() + d12_1.norm_squared());
         //
-        let d20_0 = (q0 - q2) - rot0 * (p0 - p2);
-        let d20_1 = (q0 - q2) - rot1 * (p0 - p2);
-        let d20_2 = (q0 - q2) - rot2 * (p0 - p2);
+        let d20_0 = (e.p0 - e.p2) - rot0 * (s.p0 - s.p2);
+        let d20_1 = (e.p0 - e.p2) - rot1 * (s.p0 - s.p2);
+        let d20_2 = (e.p0 - e.p2) - rot2 * (s.p0 - s.p2);
         w += coeff * cots[1] * (d20_0.norm_squared() + d20_1.norm_squared() + d20_2.norm_squared());
         //
-        let d01_0 = (q1 - q0) - rot0 * (p1 - p0);
-        let d01_1 = (q1 - q0) - rot1 * (p1 - p0);
-        let d01_2 = (q1 - q0) - rot2 * (p1 - p0);
+        let d01_0 = (e.p1 - e.p0) - rot0 * (s.p1 - s.p0);
+        let d01_1 = (e.p1 - e.p0) - rot1 * (s.p1 - s.p0);
+        let d01_2 = (e.p1 - e.p0) - rot2 * (s.p1 - s.p0);
         w += coeff * cots[2] * (d01_0.norm_squared() + d01_1.norm_squared() + d01_2.norm_squared());
     }
     let mut dw = [nalgebra::Vector3::<T>::zeros(); 3];
     {
         let rot = (rot0 + rot1 + rot2).scale(T::one() / 3.0.as_());
-        let d12 = (q2 - q1) - rot * (p2 - p1);
-        let d20 = (q0 - q2) - rot * (p0 - p2);
-        let d01 = (q1 - q0) - rot * (p1 - p0);
+        let d12 = (e.p2 - e.p1) - rot * (s.p2 - s.p1);
+        let d20 = (e.p0 - e.p2) - rot * (s.p0 - s.p2);
+        let d01 = (e.p1 - e.p0) - rot * (s.p1 - s.p0);
         let coeff: T = 0.5f64.as_();
         dw[0] += d20.scale(coeff * cots[1]) - d01.scale(coeff * cots[2]);
         dw[1] += d01.scale(coeff * cots[2]) - d12.scale(coeff * cots[0]);
@@ -408,21 +408,33 @@ fn test_wdw_arap_spoke_rim() {
     let rot1: Mat = nalgebra::Rotation3::from_euler_angles(2., 3., 1.).into();
     let rot2: Mat = nalgebra::Rotation3::from_euler_angles(3., 1., 2.).into();
     let eps = 1.0e-4;
-    let (w0, dw0) = wdw_arap_spoke_rim(&p0, &p1, &p2, &q0, &q1, &q2, &rot0, &rot1, &rot2);
+    let (w0, dw0) = wdw_arap_spoke_rim(
+        CornerVertices{ p0: &p0, p1: &p1, p2: &p2},
+        CornerVertices{ p0: &q0, p1: &q1, p2: &q2},
+        &rot0, &rot1, &rot2);
     for i_dim in 0..3 {
         let mut q0a: Vec = q0.clone();
         q0a[i_dim] += eps;
-        let (w1_0, _dw1_0) = wdw_arap_spoke_rim(&p0, &p1, &p2, &q0a, &q1, &q2, &rot0, &rot1, &rot2);
+        let (w1_0, _dw1_0) = wdw_arap_spoke_rim(
+            CornerVertices{ p0: &p0, p1: &p1, p2: &p2},
+            CornerVertices{ p0: &q0a, p1: &q1, p2: &q2},
+            &rot0, &rot1, &rot2);
         assert!(((w1_0 - w0) / eps - dw0[0][i_dim]).abs() < dw0[0][i_dim].abs() * 0.001 + 0.00001);
         //
         let mut q1a: Vec = q1.clone();
         q1a[i_dim] += eps;
-        let (w1_1, _dw1_1) = wdw_arap_spoke_rim(&p0, &p1, &p2, &q0, &q1a, &q2, &rot0, &rot1, &rot2);
+        let (w1_1, _dw1_1) = wdw_arap_spoke_rim(
+            CornerVertices{ p0: &p0, p1: &p1, p2: &p2},
+            CornerVertices{ p0: &q0, p1: &q1a, p2: &q2},
+            &rot0, &rot1, &rot2);
         assert!(((w1_1 - w0) / eps - dw0[1][i_dim]).abs() < dw0[1][i_dim].abs() * 0.001 + 0.00001);
         //
         let mut q2a: Vec = q2.clone();
         q2a[i_dim] += eps;
-        let (w1_2, _dw1_2) = wdw_arap_spoke_rim(&p0, &p1, &p2, &q0, &q1, &q2a, &rot0, &rot1, &rot2);
+        let (w1_2, _dw1_2) = wdw_arap_spoke_rim(
+            CornerVertices{ p0: &p0, p1: &p1, p2: &p2},
+            CornerVertices{ p0: &q0, p1: &q1, p2: &q2a},
+            &rot0, &rot1, &rot2);
         assert!(((w1_2 - w0) / eps - dw0[2][i_dim]).abs() < dw0[2][i_dim].abs() * 0.001 + 0.00001,);
     }
 }
@@ -433,9 +445,9 @@ pub fn energy_arap_spoke_rim<T>(
     vtx2xyz_def: &[T],
     vtx2rot: &[T],
 ) -> T
-where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
-    f64: AsPrimitive<T>,
+    where
+        T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
+        f64: AsPrimitive<T>,
 {
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);
@@ -449,12 +461,16 @@ where
         let q1 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_def[i1 * 3..i1 * 3 + 3]);
         let q2 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_def[i2 * 3..i2 * 3 + 3]);
         let (w, _) = wdw_arap_spoke_rim(
-            &p0,
-            &p1,
-            &p2,
-            &q0,
-            &q1,
-            &q2,
+            CornerVertices {
+                p0: &p0,
+                p1: &p1,
+                p2: &p2,
+            },
+            CornerVertices {
+                p0: &q0,
+                p1: &q1,
+                p2: &q2,
+            },
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i0 * 9..i0 * 9 + 9]),
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i1 * 9..i1 * 9 + 9]),
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i2 * 9..i2 * 9 + 9]),
@@ -522,12 +538,16 @@ pub fn residual_arap_spoke_rim<T>(
         let q1 = del_msh::vtx2xyz::to_navec3(vtx2xyz_def, i1);
         let q2 = del_msh::vtx2xyz::to_navec3(vtx2xyz_def, i2);
         let (_, dw) = wdw_arap_spoke_rim(
-            &p0,
-            &p1,
-            &p2,
-            &q0,
-            &q1,
-            &q2,
+            CornerVertices {
+                p0: &p0,
+                p1: &p1,
+                p2: &p2,
+            },
+            CornerVertices {
+                p0: &q0,
+                p1: &q1,
+                p2: &q2,
+            },
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i0 * 9..i0 * 9 + 9]),
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i1 * 9..i1 * 9 + 9]),
             &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i2 * 9..i2 * 9 + 9]),
@@ -549,7 +569,6 @@ pub fn residual_arap_spoke_rim<T>(
 
 #[cfg(test)]
 mod tests {
-
     fn mydef(vtx2xyz_ini: &[f64]) -> Vec<f64> {
         let num_vtx = vtx2xyz_ini.len() / 3;
         let mut vtx2xyz_def = vec![0f64; vtx2xyz_ini.len()];
