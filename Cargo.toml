@@ -11,9 +11,9 @@ license = "MIT"
 
 [dependencies]
 num-traits = "0.2.19"
-nalgebra = "0.32.6"
+nalgebra = "0.33.0"
 itertools = "0.13.0"
 
 del-geo = {path="../del-geo"}
-del-msh = {path="../del-msh"}
+del-msh-core = {path="../del-msh/del-msh-core"}
 del-ls = {path="../del-ls"}
