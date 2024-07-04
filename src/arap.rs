@@ -18,8 +18,8 @@ pub fn optimal_rotation_for_arap_spoke<T>(
         let j_vtx = adj2vtx[idx];
         let q0 = &vtx2xyz_ini[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
         let q1 = &vtx2xyz_def[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
-        let pq0 = del_geo::vec3::sub_(q0, p0);
-        let pq1 = del_geo::vec3::sub_(q1, p1);
+        let pq0 = del_geo_core::vec3::sub(q0, p0);
+        let pq1 = del_geo_core::vec3::sub(q1, p1);
         let w = adj2weight[idx] * weight_scale;
         a.m11 += w * pq1[0] * pq0[0];
         a.m12 += w * pq1[0] * pq0[1];
@@ -31,7 +31,7 @@ pub fn optimal_rotation_for_arap_spoke<T>(
         a.m32 += w * pq1[2] * pq0[1];
         a.m33 += w * pq1[2] * pq0[2];
     }
-    del_geo::mat3::rotational_component(&a)
+    del_geo_nalgebra::mat3::rotational_component(&a)
 }
 
 
@@ -117,8 +117,8 @@ fn energy_par_vtx_arap_spoke<T>(
         let j_vtx = adj2vtx[idx];
         let q0 = &vtx2xyz_ini[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
         let q1 = &vtx2xyz_def[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
-        let pq0 = del_geo::vec3::sub_(q0, p0);
-        let pq1 = del_geo::vec3::sub_(q1, p1);
+        let pq0 = del_geo_core::vec3::sub(q0, p0);
+        let pq1 = del_geo_core::vec3::sub(q1, p1);
         let pq0 = rot_mat * nalgebra::Vector3::<T>::from(pq0);
         let pq1 = nalgebra::Vector3::<T>::from(pq1);
         let diff = (pq1 - pq0).norm_squared();
@@ -306,7 +306,7 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     vtx2rot.fill(T::zero());
     for nodes in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (nodes[0], nodes[1], nodes[2]);
-        let cots = del_geo::tri3::cot_(
+        let cots = del_geo_core::tri3::cot_(
             &vtx2xyz_ini[i0 * 3..i0 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i1 * 3..i1 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i2 * 3..i2 * 3 + 3].try_into().unwrap(),
@@ -336,7 +336,7 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     }
     for i_vtx in 0..num_vtx {
         let rt = nalgebra::Matrix3::<T>::from_column_slice(&vtx2rot[i_vtx * 9..i_vtx * 9 + 9]);
-        let rt = del_geo::mat3::rotational_component(&rt);
+        let rt = del_geo_nalgebra::mat3::rotational_component(&rt);
         vtx2rot[i_vtx * 9..i_vtx * 9 + 9]
             .iter_mut()
             .zip(rt.iter())
@@ -361,7 +361,7 @@ fn wdw_arap_spoke_rim<T>(
         T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
         f64: AsPrimitive<T>,
 {
-    let cots = del_geo::tri3::cot_(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
+    let cots = del_geo_core::tri3::cot_(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
     let mut w = T::zero();
     {
         let coeff: T = (0.25f64 / 3.0f64).as_();

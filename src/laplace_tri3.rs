@@ -16,7 +16,7 @@ pub fn merge_from_mesh<T>(
         let v0: &[T; 3] = &vtx2xyz[i0 * 3..i0 * 3 + 3].try_into().unwrap();
         let v1: &[T; 3] = &vtx2xyz[i1 * 3..i1 * 3 + 3].try_into().unwrap();
         let v2: &[T; 3] = &vtx2xyz[i2 * 3..i2 * 3 + 3].try_into().unwrap();
-        let emat: [[[T; 1]; 3]; 3] = del_geo::tri3::emat_cotangent_laplacian(v0, v1, v2);
+        let emat: [[[T; 1]; 3]; 3] = del_geo_core::tri3::emat_cotangent_laplacian(v0, v1, v2);
         crate::merge::csrdia::<T, 1, 3>(
             node2vtx,
             node2vtx,
@@ -46,7 +46,7 @@ pub fn to_linearsystem(
     ls.begin_merge();
     let num_vtx = vtx2xyz.len() / 3;
     let mut buffer = vec!(usize::MAX; num_vtx);
-    let ddw = del_geo::tri3::emat_graph_laplacian(val_offdia);
+    let ddw = del_geo_core::tri3::emat_graph_laplacian(val_offdia);
     for node2vtx in tri2vtx.chunks(3) {
         let node2vtx = node2vtx.try_into().unwrap();
         crate::merge::csrdia::<f32, 1, 3>(

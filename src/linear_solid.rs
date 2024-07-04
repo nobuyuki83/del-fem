@@ -25,8 +25,8 @@ where
     T: num_traits::Float + 'static + Copy + std::ops::AddAssign,
     f64: num_traits::AsPrimitive<T>,
 {
-    let area = del_geo::tri2::area_(p0, p1, p2);
-    let (dldx, _) = del_geo::tri2::dldx_(p0, p1, p2);
+    let area = del_geo_core::tri2::area(p0, p1, p2);
+    let (dldx, _) = del_geo_core::tri2::dldx(p0, p1, p2);
     let mut emat = [[[T::zero(); 4]; 3]; 3];
     add_weighted_emat_2d::<T, 3>(&mut emat, lambda, myu, dldx, area);
     emat

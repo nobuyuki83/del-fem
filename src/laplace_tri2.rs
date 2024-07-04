@@ -6,8 +6,8 @@ where
     f64: AsPrimitive<T>,
 {
     const N_NODE: usize = 3;
-    let area = del_geo::tri2::area_(p0, p1, p2);
-    let (dldx, _) = del_geo::tri2::dldx_(p0, p1, p2);
+    let area = del_geo_core::tri2::area(p0, p1, p2);
+    let (dldx, _) = del_geo_core::tri2::dldx(p0, p1, p2);
     let mut ddw = [[[T::zero(); 1]; N_NODE]; N_NODE];
     for (ino, jno) in itertools::iproduct!(0..3, 0..3) {
         ddw[ino][jno][0] =

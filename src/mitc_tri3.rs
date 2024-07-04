@@ -21,7 +21,7 @@ where
     let half = T::one() / two;
     let onefourth = T::one() / four;
     //
-    let area = del_geo::tri2::area_(&p[0], &p[1], &p[2]);
+    let area = del_geo_core::tri2::area(&p[0], &p[1], &p[2]);
     let gd: [[T; 3]; 3] = [
         // covariant basis vectors
         [p[1][0] - p[0][0], p[1][1] - p[0][1], zero],
@@ -29,13 +29,13 @@ where
         [zero, zero, 0.564.as_() * thk],
     ];
 
-    let gu: [[T; 3]; 3] = del_geo::mat3::inverse_array_of_array(&gd);
+    let gu: [[T; 3]; 3] = del_geo_core::mat3::inverse_array_of_array(&gd);
 
     let gu_gu: [T; 4] = [
-        del_geo::vec3::dot_(&gu[0], &gu[0]), // rr 0
-        del_geo::vec3::dot_(&gu[1], &gu[1]), // ss 1
-        del_geo::vec3::dot_(&gu[0], &gu[1]), // sr 2
-        del_geo::vec3::dot_(&gu[2], &gu[2]), // tt 3
+        del_geo_core::vec3::dot(&gu[0], &gu[0]), // rr 0
+        del_geo_core::vec3::dot(&gu[1], &gu[1]), // ss 1
+        del_geo_core::vec3::dot(&gu[0], &gu[1]), // sr 2
+        del_geo_core::vec3::dot(&gu[2], &gu[2]), // tt 3
     ];
 
     let mut w = zero;
@@ -317,7 +317,7 @@ pub fn mass_lumped_plate_bending<T>(
         let p0 = vtx2xy[i0 * 2..i0 * 2 + 2].try_into().unwrap();
         let p1 = vtx2xy[i1 * 2..i1 * 2 + 2].try_into().unwrap();
         let p2 = vtx2xy[i2 * 2..i2 * 2 + 2].try_into().unwrap();
-        let a012 = del_geo::tri2::area_(p0, p1, p2);
+        let a012 = del_geo_core::tri2::area(p0, p1, p2);
         let m0 = a012 / three * rho * thick;
         let m1 = a012 / three * rho * thick * thick * thick / twelve;
         for i_vtx in node2vtx {
