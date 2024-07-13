@@ -11,10 +11,10 @@ pub fn merge_from_mesh<T>(
     f64: num_traits::AsPrimitive<T>,
 {
     for node2vtx in tri2vtx.chunks(3) {
-        let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let v0: &[T; 3] = &vtx2xyz[i0 * 3..i0 * 3 + 3].try_into().unwrap();
-        let v1: &[T; 3] = &vtx2xyz[i1 * 3..i1 * 3 + 3].try_into().unwrap();
-        let v2: &[T; 3] = &vtx2xyz[i2 * 3..i2 * 3 + 3].try_into().unwrap();
+        let node2vtx = arrayref::array_ref![node2vtx, 0, 3];
+        let v0: &[T; 3] = arrayref::array_ref!(vtx2xyz, node2vtx[0] * 3, 3);
+        let v1: &[T; 3] = arrayref::array_ref!(vtx2xyz, node2vtx[1] * 3, 3);
+        let v2: &[T; 3] = arrayref::array_ref!(vtx2xyz, node2vtx[2] * 3, 3);
         let emat: [[[T; 1]; 3]; 3] = del_geo_core::tri3::emat_cotangent_laplacian(v0, v1, v2);
         crate::merge::csrdia::<T, 1, 3>(
             node2vtx,
@@ -37,7 +37,7 @@ pub fn to_linearsystem(
     val_dia: f32,
     val_offdia: f32,
 ) -> del_ls::linearsystem::Solver<f32> {
-    let vtx2vtx = del_msh_core::vtx2vtx::from_uniform_mesh(&tri2vtx, 3, vtx2xyz.len() / 3, false);
+    let vtx2vtx = del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx, 3, vtx2xyz.len() / 3, false);
     let mut ls = del_ls::linearsystem::Solver::new();
     ls.initialize(&vtx2vtx.0, &vtx2vtx.1);
     //
@@ -46,7 +46,7 @@ pub fn to_linearsystem(
     let mut buffer = vec![usize::MAX; num_vtx];
     let ddw = del_geo_core::tri3::emat_graph_laplacian(val_offdia);
     for node2vtx in tri2vtx.chunks(3) {
-        let node2vtx = node2vtx.try_into().unwrap();
+        let node2vtx = arrayref::array_ref!(node2vtx, 0, 3);
         crate::merge::csrdia::<f32, 1, 3>(
             node2vtx,
             node2vtx,

@@ -11,13 +11,13 @@ pub fn optimal_rotation_for_arap_spoke<T>(
 where
     T: nalgebra::RealField + Copy + std::ops::AddAssign,
 {
-    let p0 = &vtx2xyz_ini[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
-    let p1 = &vtx2xyz_def[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
+    let p0 = arrayref::array_ref!(vtx2xyz_ini, i_vtx * 3, 3);
+    let p1 = arrayref::array_ref!(vtx2xyz_def, i_vtx * 3, 3);
     let mut a = nalgebra::Matrix3::<T>::zeros();
     for idx in 0..adj2vtx.len() {
         let j_vtx = adj2vtx[idx];
-        let q0 = &vtx2xyz_ini[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
-        let q1 = &vtx2xyz_def[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
+        let q0 = arrayref::array_ref!(vtx2xyz_ini, j_vtx * 3, 3);
+        let q1 = arrayref::array_ref!(vtx2xyz_def, j_vtx * 3, 3);
         let pq0 = del_geo_core::vec3::sub(q0, p0);
         let pq1 = del_geo_core::vec3::sub(q1, p1);
         let w = adj2weight[idx] * weight_scale;
@@ -112,13 +112,13 @@ fn energy_par_vtx_arap_spoke<T>(
 where
     T: nalgebra::RealField + Copy + std::ops::AddAssign,
 {
-    let p0 = &vtx2xyz_ini[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
-    let p1 = &vtx2xyz_def[i_vtx * 3..i_vtx * 3 + 3].try_into().unwrap();
+    let p0 = arrayref::array_ref!(vtx2xyz_ini, i_vtx * 3, 3);
+    let p1 = arrayref::array_ref!(vtx2xyz_def, i_vtx * 3, 3);
     let mut w = T::zero();
     for idx in 0..adj2vtx.len() {
         let j_vtx = adj2vtx[idx];
-        let q0 = &vtx2xyz_ini[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
-        let q1 = &vtx2xyz_def[j_vtx * 3..j_vtx * 3 + 3].try_into().unwrap();
+        let q0 = arrayref::array_ref!(vtx2xyz_ini, j_vtx * 3, 3);
+        let q1 = arrayref::array_ref!(vtx2xyz_def, j_vtx * 3, 3);
         let pq0 = del_geo_core::vec3::sub(q0, p0);
         let pq1 = del_geo_core::vec3::sub(q1, p1);
         let pq0 = rot_mat * nalgebra::Vector3::<T>::from(pq0);
@@ -312,7 +312,7 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     vtx2rot.fill(T::zero());
     for nodes in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (nodes[0], nodes[1], nodes[2]);
-        let cots = del_geo_core::tri3::cot_(
+        let cots = del_geo_core::tri3::cot(
             &vtx2xyz_ini[i0 * 3..i0 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i1 * 3..i1 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i2 * 3..i2 * 3 + 3].try_into().unwrap(),
@@ -367,7 +367,7 @@ where
     T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
     f64: AsPrimitive<T>,
 {
-    let cots = del_geo_core::tri3::cot_(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
+    let cots = del_geo_core::tri3::cot(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
     let mut w = T::zero();
     {
         let coeff: T = (0.25f64 / 3.0f64).as_();

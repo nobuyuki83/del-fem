@@ -314,9 +314,9 @@ pub fn mass_lumped_plate_bending<T>(
     let twelve = three * four;
     for node2vtx in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let p0 = vtx2xy[i0 * 2..i0 * 2 + 2].try_into().unwrap();
-        let p1 = vtx2xy[i1 * 2..i1 * 2 + 2].try_into().unwrap();
-        let p2 = vtx2xy[i2 * 2..i2 * 2 + 2].try_into().unwrap();
+        let p0 = arrayref::array_ref!(vtx2xy, i0 * 2, 2);
+        let p1 = arrayref::array_ref!(vtx2xy, i1 * 2, 2);
+        let p2 = arrayref::array_ref!(vtx2xy, i2 * 2, 2);
         let a012 = del_geo_core::tri2::area(p0, p1, p2);
         let m0 = a012 / three * rho * thick;
         let m1 = a012 / three * rho * thick * thick * thick / twelve;

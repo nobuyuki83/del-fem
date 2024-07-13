@@ -25,7 +25,7 @@ where
     let half = one / two;
 
     let (Gd, Area) = {
-        let (gd2, Area) = tri3::unit_normal_area_(&P[0], &P[1], &P[2]);
+        let (gd2, Area) = tri3::unit_normal_area(&P[0], &P[1], &P[2]);
         (
             [
                 [P[1][0] - P[0][0], P[1][1] - P[0][1], P[1][2] - P[0][2]],

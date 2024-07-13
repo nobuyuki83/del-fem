@@ -1,6 +1,6 @@
 pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
-    node2row: &[usize],
-    node2col: &[usize],
+    node2row: &[usize; N_NODE],
+    node2col: &[usize; N_NODE],
     emat: &[[[T; BLKSIZE]; N_NODE]; N_NODE],
     row2idx: &[usize],
     idx2col: &[usize],
@@ -15,7 +15,7 @@ pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
     assert_eq!(row2val.len(), num_blk * BLKSIZE);
     merge_buffer.resize(num_blk, usize::MAX);
     let col2idx = merge_buffer;
-    for inode in 0..node2row.len() {
+    for inode in 0..N_NODE {
         let i_row = node2row[inode];
         assert!(i_row < num_blk);
         for ij_idx in row2idx[i_row]..row2idx[i_row + 1] {
@@ -23,7 +23,7 @@ pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
             let j_col = idx2col[ij_idx];
             col2idx[j_col] = ij_idx;
         }
-        for jnode in 0..node2col.len() {
+        for jnode in 0..N_NODE {
             let j_col = node2col[jnode];
             assert!(j_col < num_blk);
             if i_row == j_col {
