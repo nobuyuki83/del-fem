@@ -38,13 +38,13 @@ where
 
     let mut Gu: [[T; 3]; 2] = [[zero; 3]; 2]; // inverse of Gd
     {
-        vec3::cross_mut_(&mut Gu[0], &Gd[1], &Gd[2]);
+        vec3::cross_mut(&mut Gu[0], &Gd[1], &Gd[2]);
         let invtmp1 = one / vec3::dot(&Gu[0], &Gd[0]);
         Gu[0][0] *= invtmp1;
         Gu[0][1] *= invtmp1;
         Gu[0][2] *= invtmp1;
         //
-        vec3::cross_mut_(&mut Gu[1], &Gd[2], &Gd[0]);
+        vec3::cross_mut(&mut Gu[1], &Gd[2], &Gd[0]);
         let invtmp2 = one / vec3::dot(&Gu[1], &Gd[1]);
         Gu[1][0] *= invtmp2;
         Gu[1][1] *= invtmp2;

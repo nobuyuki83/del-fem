@@ -33,16 +33,15 @@ pub fn merge_from_mesh<T>(
 /// I * `val_dia` + L * `val_offdia`
 pub fn to_linearsystem(
     tri2vtx: &[usize],
-    vtx2xyz: &[f32],
+    num_vtx: usize,
     val_dia: f32,
     val_offdia: f32,
 ) -> del_ls::linearsystem::Solver<f32> {
-    let vtx2vtx = del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx, 3, vtx2xyz.len() / 3, false);
+    let vtx2vtx = del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx, 3, num_vtx, false);
     let mut ls = del_ls::linearsystem::Solver::new();
     ls.initialize(&vtx2vtx.0, &vtx2vtx.1);
     //
     ls.begin_merge();
-    let num_vtx = vtx2xyz.len() / 3;
     let mut buffer = vec![usize::MAX; num_vtx];
     let ddw = del_geo_core::tri3::emat_graph_laplacian(val_offdia);
     for node2vtx in tri2vtx.chunks(3) {

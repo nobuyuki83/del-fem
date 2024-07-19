@@ -5,7 +5,7 @@ use num_traits::AsPrimitive;
 /// * `p` - initial XY position
 /// * `u` - z displacement and xy-axis rotation
 pub fn w_dw_ddw_plate_bending<T>(
-    p: &[[T; 2]; 3],
+    p: &[&[T; 2]; 3],
     u: &[[T; 3]; 3],
     thk: T,
     lambda: T,
@@ -29,7 +29,7 @@ where
         [zero, zero, 0.564.as_() * thk],
     ];
 
-    let gu: [[T; 3]; 3] = del_geo_core::mat3::inverse_array_of_array(&gd);
+    let gu: [[T; 3]; 3] = del_geo_core::curve_linear_coords::inverse(&gd);
 
     let gu_gu: [T; 4] = [
         del_geo_core::vec3::dot(&gu[0], &gu[0]), // rr 0
@@ -270,7 +270,10 @@ where
 #[test]
 fn test_w_dw_ddw_plate_bending() {
     type T = f64;
-    let p: [[T; 2]; 3] = [[0., 0.], [1., 0.1], [0.1, 1.0]];
+    let p0 = [0., 0.];
+    let p1 = [1., 0.1];
+    let p2 = [0.1, 1.0];
+    let p: [&[T; 2]; 3] = [&p0, &p1, &p2];
     let u0: [[T; 3]; 3] = [[0.01, 0.02, 0.03], [-0.01, 0.01, 0.03], [0.02, 0.03, 0.02]];
     let thickness1 = 0.03;
     let lambda1 = 1.0;

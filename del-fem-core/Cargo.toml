@@ -1,0 +1,20 @@
+[package]
+name = "del-fem-core"
+description = "finite element method (FEM) utility codes"
+version.workspace = true
+edition = "2021"
+documentation = "https://docs.rs/del_fem"
+repository = "https://github.com/nobuyuki83/del-fem/"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-traits = {workspace = true}
+nalgebra = {workspace = true}
+itertools = {workspace = true}
+arrayref = {workspace = true}
+del-geo-core = { workspace = true}
+del-geo-nalgebra = {workspace = true}
+del-msh-core = { workspace = true}
+del-ls = { workspace = true}
