@@ -1,0 +1,22 @@
+[package]
+name = "pydel-fem"
+version = "0.1.1"
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "del_fem"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21.0", features = ["extension-module"] }
+numpy = "0.21.0"
+nalgebra = {workspace = true}
+num-traits = {workspace = true}
+arrayref = {workspace = true}
+#
+del-fem-core = {path="../del-fem-core"}
+del-geo-core = {workspace = true}
+del-msh-core = {workspace = true}
+# del-fem = "0.1.3"
+# del-geo = "0.1.20"
