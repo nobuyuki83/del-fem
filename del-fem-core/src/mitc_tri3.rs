@@ -21,7 +21,7 @@ where
     let half = T::one() / two;
     let onefourth = T::one() / four;
     //
-    let area = del_geo_core::tri2::area(&p[0], &p[1], &p[2]);
+    let area = del_geo_core::tri2::area(p[0], p[1], p[2]);
     let gd: [[T; 3]; 3] = [
         // covariant basis vectors
         [p[1][0] - p[0][0], p[1][1] - p[0][1], zero],
