@@ -15,7 +15,7 @@ nalgebra = {workspace = true}
 itertools = {workspace = true}
 arrayref = {workspace = true}
 #
-del-geo-core = { workspace = true}
-del-geo-nalgebra = {workspace = true}
-del-msh-core = { workspace = true}
-del-ls = { workspace = true}
+del-geo-core = "0.1.29" # { workspace = true}
+del-geo-nalgebra = "0.1.29" # {workspace = true}
+del-msh-core = "0.1.34" # { workspace = true}
+del-ls = "0.1.5" # { workspace = true}
