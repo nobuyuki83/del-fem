@@ -1,5 +1,5 @@
 [workspace]
-members = ["del-fem-core", "del-fem-pyo3"]
+members = ["del-fem-core", "del-fem-pyo3", "del-ls"]
 resolver = "2"
 
 
@@ -11,6 +11,7 @@ description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
 repository = "https://github.com/nobuyuki83/del-fem/"
 license = "MIT"
+authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,11 +20,13 @@ num-traits = "0.2.19"
 nalgebra = "0.33.0"
 itertools = "0.13.0"
 arrayref = "0.3.7"
+del-ls = {path="del-ls"}
+del-fem-core = {path="del-fem-core"}
 
+# external library
 del-geo-core = {path="../del-geo/del-geo-core"}
 del-geo-nalgebra = {path="../del-geo/del-geo-nalgebra"}
 del-msh-core = {path="../del-msh/del-msh-core"}
-del-ls = {path="../del-ls"}
 
 # del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 # del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
