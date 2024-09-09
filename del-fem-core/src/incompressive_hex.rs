@@ -1,4 +1,87 @@
-use crate::dudx::right_cauchy_green_tensor;
+use crate::dudx::{right_cauchy_green_tensor, tensor3_from_symmetric_vector_param};
+
+pub fn wr_dwrdc_ddwrddc_energy_density_sqr_compression<Real>(
+    c: &[[Real; 3]; 3],
+) -> (Real, [Real; 6], [[Real; 6]; 6])
+where
+    Real: num_traits::Float + std::ops::AddAssign,
+{
+    let zero = Real::zero();
+    let one = Real::one();
+    let two = one + one;
+    let half = one / two;
+
+    let (det_c, c_inv) = del_geo_core::mat3_array_of_array::det_inv(c);
+
+    // [0.5*(J-1)*(J-1)]' -> (J-1) * J'ij -> (J-1) * J * Cij
+    let dwdc = {
+        let tmp0 = (det_c - one) * det_c;
+        [
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[0][0]][crate::dudx::ISTDIM2IJ[0][1]],
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[1][0]][crate::dudx::ISTDIM2IJ[1][1]],
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[2][0]][crate::dudx::ISTDIM2IJ[2][1]],
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[3][0]][crate::dudx::ISTDIM2IJ[3][1]],
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[4][0]][crate::dudx::ISTDIM2IJ[4][1]],
+            tmp0 * c_inv[crate::dudx::ISTDIM2IJ[5][0]][crate::dudx::ISTDIM2IJ[5][1]],
+        ]
+    };
+    let ddwddc = {
+        // Extracting independent components in the constitutive tensor
+        let mut ddw_ddc = [[zero; 6]; 6];
+        for (istdim, jstdim) in itertools::iproduct!(0..6, 0..6) {
+            let idim = crate::dudx::ISTDIM2IJ[istdim][0];
+            let jdim = crate::dudx::ISTDIM2IJ[istdim][1];
+            let kdim = crate::dudx::ISTDIM2IJ[jstdim][0];
+            let ldim = crate::dudx::ISTDIM2IJ[jstdim][1];
+            /*
+            // exact derivative
+            // (J^2 - J) * Cij -> (2J - 1) * J'kl * Cij + (J^2-J) * C''ijkl
+            // -> (2J - 1) * J * Cij * Ckl + (J^2-J) * Cik * Cjl
+            let v0 = (two * det_c - one) * det_c *  c_inv[idim][jdim] * c_inv[kdim][ldim];
+            let v1 = (one-det_c)*det_c * c_inv[idim][kdim] * c_inv[jdim][ldim];
+            ddw_ddc[istdim][jstdim] = v0 + v1;
+             */
+            // symetrized derivative
+            let v1 = (two * det_c - one) * det_c * c_inv[idim][jdim] * c_inv[kdim][ldim];
+            let v2 = half * (one - det_c) * det_c * c_inv[idim][ldim] * c_inv[jdim][kdim];
+            let v3 = half * (one - det_c) * det_c * c_inv[idim][kdim] * c_inv[jdim][ldim];
+            ddw_ddc[istdim][jstdim] = v1 + v2 + v3;
+        }
+        ddw_ddc
+    };
+    (half * (det_c - one) * (det_c - one), dwdc, ddwddc)
+}
+
+#[test]
+pub fn test_hoge() {
+    let cv0: [f64; 6] = [1., 0.9, 1.1, -0.1, -0.2, -0.3];
+    let c0 = tensor3_from_symmetric_vector_param(&cv0);
+    let (w0, dw0, ddw0) = wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c0);
+    let eps = 1.0e-6;
+    for i_dim in 0..6 {
+        let mut c1 = c0;
+        c1[crate::dudx::ISTDIM2IJ[i_dim][0]][crate::dudx::ISTDIM2IJ[i_dim][1]] += eps;
+        let (w1, _dw1, _ddw) = wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c1);
+        {
+            let v_num = (w1 - w0) / eps;
+            let v_ana = dw0[i_dim];
+            assert!((v_num - v_ana).abs() < 1.0e-6);
+        }
+    }
+    // check symmetrized derivative
+    for i_dim in 0..6 {
+        let mut c1 = c0;
+        c1[crate::dudx::ISTDIM2IJ[i_dim][0]][crate::dudx::ISTDIM2IJ[i_dim][1]] += eps * 0.5;
+        c1[crate::dudx::ISTDIM2IJ[i_dim][1]][crate::dudx::ISTDIM2IJ[i_dim][0]] += eps * 0.5;
+        let (_w1, dw1, _ddw) = wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c1);
+        for j_dim in 0..6 {
+            let v_num = (dw1[j_dim] - dw0[j_dim]) / eps;
+            let v_ana = ddw0[i_dim][j_dim];
+            assert!((v_num - v_ana).abs() < 5.0e-6);
+        }
+    }
+}
+
 
 //
 fn add_wdwddw_from_energy_density_cauchy<Real>(
@@ -86,7 +169,7 @@ where
         let (dndx, detwei) = del_geo_core::hex::grad_shapefunc(node2xyz, quadrature, ir1, ir2, ir3);
         let dudx = crate::dndx::disp_grad_tensor::<8, 3, Real>(&dndx, node2disp);
         let c = right_cauchy_green_tensor::<3, Real>(&dudx);
-        let (wr, dwrdc, ddwrddc) = crate::dudx::wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c);
+        let (wr, dwrdc, ddwrddc) = wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c);
         add_wdwddw_from_energy_density_cauchy(
             &mut w,
             &mut dw,
