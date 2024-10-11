@@ -1,4 +1,4 @@
-fn hessian(
+pub fn hessian(
     myu: f32,
     lambda: f32,
     node2xyz: &[[f32; 3]; 8],

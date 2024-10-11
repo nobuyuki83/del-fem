@@ -26,7 +26,7 @@ where
         // covariant basis vectors
         [p[1][0] - p[0][0], p[1][1] - p[0][1], zero],
         [p[2][0] - p[0][0], p[2][1] - p[0][1], zero],
-        [zero, zero, 0.564.as_() * thk],
+        [zero, zero, 0.5f64.as_() * thk],
     ];
 
     let gu: [[T; 3]; 3] = del_geo_core::curve_linear_coords::inverse(&gd);

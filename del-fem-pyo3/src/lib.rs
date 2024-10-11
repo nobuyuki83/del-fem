@@ -157,7 +157,7 @@ fn merge_linear_solid_to_bsr_for_meshtri2<'a>(
         let p0 = arrayref::array_ref!(vtx2xy, i0 * 2, 2);
         let p1 = arrayref::array_ref!(vtx2xy, i1 * 2, 2);
         let p2 = arrayref::array_ref!(vtx2xy, i2 * 2, 2);
-        let ddw = del_fem_core::linear_solid_tri2::emat_tri2(1.0, 1.0, p0, p1, p2);
+        let ddw = del_fem_core::solid_linear_tri2::emat_tri2(1.0, 1.0, p0, p1, p2);
         del_fem_core::merge::blkcsr::<f32, 4, 3>(
             node2vtx,
             node2vtx,
