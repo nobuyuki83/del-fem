@@ -1,4 +1,4 @@
-use crate::dudx::{right_cauchy_green_tensor, tensor3_from_symmetric_vector_param};
+use crate::dudx::right_cauchy_green_tensor;
 
 pub fn wr_dwrdc_ddwrddc_energy_density_sqr_compression<Real>(
     c: &[[Real; 3]; 3],
@@ -55,7 +55,7 @@ where
 #[test]
 pub fn test_hoge() {
     let cv0: [f64; 6] = [1., 0.9, 1.1, -0.1, -0.2, -0.3];
-    let c0 = tensor3_from_symmetric_vector_param(&cv0);
+    let c0 = crate::dudx::tensor3_from_symmetric_vector_param(&cv0);
     let (w0, dw0, ddw0) = wr_dwrdc_ddwrddc_energy_density_sqr_compression(&c0);
     let eps = 1.0e-6;
     for i_dim in 0..6 {
@@ -81,7 +81,6 @@ pub fn test_hoge() {
         }
     }
 }
-
 
 //
 fn add_wdwddw_from_energy_density_cauchy<Real>(

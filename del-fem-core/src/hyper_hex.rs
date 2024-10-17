@@ -1,5 +1,4 @@
-
-const ISTDIM2IJ: [[usize; 2]; 6] = [[0, 0], [1, 1], [2, 2], [0, 1], [1, 2], [2, 0]];
+pub const ISTDIM2IJ: [[usize; 2]; 6] = [[0, 0], [1, 1], [2, 2], [0, 1], [1, 2], [2, 0]];
 
 ///!
 /// compute energy density and its gradient & hessian w.r.t. right Cauchy-Green tensor given the displacement gradient tensor
@@ -11,11 +10,13 @@ const ISTDIM2IJ: [[usize; 2]; 6] = [[0, 0], [1, 1], [2, 2], [0, 1], [1, 2], [2, 
 /// * density of elastic potential energy
 /// * dWdC2 - gradient of energy density w.r.t. right Cauchy-Green tensor
 /// * ddWddC2 - hessian of energy density w.r.t. right Cauchy-Green tensor
-fn wr_dwrdc_ddwrddc_mooney_rivlin2_reduced<Real>(
+pub fn wr_dwrdc_ddwrddc_mooney_rivlin2_reduced<Real>(
     c1: Real,
     c2: Real,
-    cauchy: &[[Real; 3]; 3]) -> (Real, [Real;6], [[Real;6];6])
-where Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std::fmt::Debug
+    cauchy: &[[Real; 3]; 3],
+) -> (Real, [Real; 6], [[Real; 6]; 6])
+where
+    Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std::fmt::Debug,
 {
     let zero = Real::zero();
     let one = Real::one();
@@ -27,25 +28,24 @@ where Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std:
 
     // invariants of Cauchy-Green tensor
     let p1c = cauchy[0][0] + cauchy[1][1] + cauchy[2][2];
-    let p2c = cauchy[0][0] * cauchy[1][1]
-        + cauchy[0][0] * cauchy[2][2]
-        + cauchy[1][1] * cauchy[2][2]
-        - cauchy[0][1] * cauchy[1][0]
-        - cauchy[0][2] * cauchy[2][0]
-        - cauchy[1][2] * cauchy[2][1];
+    let p2c =
+        cauchy[0][0] * cauchy[1][1] + cauchy[0][0] * cauchy[2][2] + cauchy[1][1] * cauchy[2][2]
+            - cauchy[0][1] * cauchy[1][0]
+            - cauchy[0][2] * cauchy[2][0]
+            - cauchy[1][2] * cauchy[2][1];
     let (p3c, c_inv) = del_geo_core::mat3_array_of_array::det_inv(&cauchy);
-    let tmp1 = one / p3c.powf( one3rd );
-    let tmp2 = one / p3c.powf( two3rd );
+    let tmp1 = one / p3c.powf(one3rd);
+    let tmp2 = one / p3c.powf(two3rd);
     let pi1c = p1c * tmp1; // 1st reduced invariant
     let pi2c = p2c * tmp2; // 2nd reduced invariant
     let wr = c1 * (pi1c - three) + c2 * (pi2c - three);
-    let mut dwrdcv = [zero;6];
-    { // compute 2nd Piola-Kirchhoff tensor here
-        let mut s = [[zero;3];3]; // 2nd Piola-Kirchhoff tensor
+    let mut dwrdcv = [zero; 6];
+    {
+        // compute 2nd Piola-Kirchhoff tensor here
+        let mut s = [[zero; 3]; 3]; // 2nd Piola-Kirchhoff tensor
         for (idim, jdim) in itertools::iproduct!(0..3, 0..3) {
-            s[idim][jdim] =
-                -c2 * tmp2 * cauchy[idim][jdim]
-                    - one3rd * (c1 * pi1c + c2 * two * pi2c) * c_inv[idim][jdim];
+            s[idim][jdim] = -c2 * tmp2 * cauchy[idim][jdim]
+                - one3rd * (c1 * pi1c + c2 * two * pi2c) * c_inv[idim][jdim];
         }
         {
             let dtmp1 = c1 * tmp1 + c2 * tmp2 * p1c;
@@ -53,7 +53,8 @@ where Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std:
             s[1][1] += dtmp1;
             s[2][2] += dtmp1;
         }
-        { // 2nd piola-kirchhoff tensor is symmetric. Here extracting 6 independent elements.
+        {
+            // 2nd piola-kirchhoff tensor is symmetric. Here extracting 6 independent elements.
             dwrdcv[0] = s[ISTDIM2IJ[0][0]][ISTDIM2IJ[0][1]];
             dwrdcv[1] = s[ISTDIM2IJ[1][0]][ISTDIM2IJ[1][1]];
             dwrdcv[2] = s[ISTDIM2IJ[2][0]][ISTDIM2IJ[2][1]];
@@ -64,16 +65,17 @@ where Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std:
     }
 
     // computing constituive tensor from here
-    let mut ddwrddc = [[[[zero;3];3];3];3];
-    for (idim, jdim, kdim, ldim) in itertools::iproduct!(0..3, 0..3, 0..3, 0..3)
-    {
+    let mut ddwrddc = [[[[zero; 3]; 3]; 3]; 3];
+    for (idim, jdim, kdim, ldim) in itertools::iproduct!(0..3, 0..3, 0..3, 0..3) {
         let mut tmp = zero;
-        tmp += c1 * tmp1 / three * (
-            c_inv[idim][jdim] * c_inv[kdim][ldim] * p1c / three
+        tmp += c1 * tmp1 / three
+            * (c_inv[idim][jdim] * c_inv[kdim][ldim] * p1c / three
                 + c_inv[idim][kdim] * c_inv[ldim][jdim] * p1c * half
                 + c_inv[idim][ldim] * c_inv[kdim][jdim] * p1c * half);
-        tmp += c2 * tmp2 * two3rd * (
-            c_inv[idim][jdim] * c_inv[kdim][ldim] * p2c * two3rd
+        tmp += c2
+            * tmp2
+            * two3rd
+            * (c_inv[idim][jdim] * c_inv[kdim][ldim] * p2c * two3rd
                 + c_inv[idim][jdim] * cauchy[kdim][ldim]
                 + cauchy[idim][jdim] * c_inv[kdim][ldim]
                 + c_inv[idim][kdim] * c_inv[jdim][ldim] * p2c * half
@@ -97,8 +99,9 @@ where Real: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign + std:
         ddwrddc[idim][jdim][idim][jdim] -= half * c2 * tmp2;
     }
 
-    let mut ddwrddcv = [[zero;6];6];
-    { // Extracting independent components in the constitutive tensor
+    let mut ddwrddcv = [[zero; 6]; 6];
+    {
+        // Extracting independent components in the constitutive tensor
         for (istdim, jstdim) in itertools::iproduct!(0..6, 0..6) {
             let idim = ISTDIM2IJ[istdim][0];
             let jdim = ISTDIM2IJ[istdim][1];

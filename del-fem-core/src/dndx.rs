@@ -1,6 +1,7 @@
 pub fn disp_grad_tensor<const NNO: usize, const NDIM: usize, Real>(
     dndx: &[[Real; NDIM]; NNO],
-    node2disp: &[[Real; NDIM]; NNO]) -> [[Real; NDIM]; NDIM]
+    node2disp: &[[Real; NDIM]; NNO],
+) -> [[Real; NDIM]; NDIM]
 where
     Real: num_traits::Float + std::ops::AddAssign,
 {

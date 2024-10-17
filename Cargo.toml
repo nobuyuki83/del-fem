@@ -20,13 +20,15 @@ num-traits = "0.2.19"
 nalgebra = "0.33.0"
 itertools = "0.13.0"
 arrayref = "0.3.7"
-del-ls = {path="del-ls"}
-del-fem-core = {path="del-fem-core"}
 
-# external library
-del-geo-core = {path="../del-geo/del-geo-core"}
-del-geo-nalgebra = {path="../del-geo/del-geo-nalgebra"}
-del-msh-core = {path="../del-msh/del-msh-core"}
+# internal my library
+del-ls = { path = "del-ls" }
+del-fem-core = { path = "del-fem-core" }
+
+# external my library
+del-geo-core = { path = "../del-geo/del-geo-core" }
+del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
+del-msh-core = { path = "../del-msh/del-msh-core" }
 
 # del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 # del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
