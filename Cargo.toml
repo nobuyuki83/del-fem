@@ -1,5 +1,5 @@
 [workspace]
-members = ["del-fem-core", "del-fem-pyo3", "del-ls"]
+members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-ls"]
 resolver = "2"
 
 
@@ -20,6 +20,10 @@ num-traits = "0.2.19"
 nalgebra = "0.33.0"
 itertools = "0.13.0"
 arrayref = "0.3.7"
+rand_chacha = "0.3.1"
+rand = "0.8.5"
+
+
 
 # internal my library
 del-ls = { path = "del-ls" }
@@ -29,8 +33,11 @@ del-fem-core = { path = "del-fem-core" }
 del-geo-core = { path = "../del-geo/del-geo-core" }
 del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
 del-msh-core = { path = "../del-msh/del-msh-core" }
+del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
 
 # del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 # del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
 # del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-# del-ls = { git = "https://github.com/nobuyuki83/del-ls.git" }
+# del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+
+
