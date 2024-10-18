@@ -15,5 +15,5 @@ pub mod solid_linear_hex;
 pub mod solid_hyper_hex;
 pub mod spring2;
 pub mod rod2;
-mod quadratic_bending;
+pub mod quadratic_bending;
 

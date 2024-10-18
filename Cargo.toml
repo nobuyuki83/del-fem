@@ -30,14 +30,14 @@ del-ls = { path = "del-ls" }
 del-fem-core = { path = "del-fem-core" }
 
 # external my library
-del-geo-core = { path = "../del-geo/del-geo-core" }
-del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-del-msh-core = { path = "../del-msh/del-msh-core" }
-del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
+# del-geo-core = { path = "../del-geo/del-geo-core" }
+# del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
+# del-msh-core = { path = "../del-msh/del-msh-core" }
+# del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
 
-# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-# del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
 
 
