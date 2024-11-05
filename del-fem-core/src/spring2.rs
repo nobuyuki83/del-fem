@@ -6,8 +6,8 @@ pub fn pbd(
     w0: f32,
     w1: f32)  -> ([f32;2], [f32;2])
 {
-    let len_def = del_geo_core::edge2::length(&p0_def, &p1_def);
-    let e01 = del_geo_core::edge2::unit_edge_vector(&p0_def, &p1_def);
+    let len_def = del_geo_core::edge2::length(p0_def, p1_def);
+    let e01 = del_geo_core::edge2::unit_edge_vector(p0_def, p1_def);
     let dp0 = [
         w0 / (w0+w1) * (len_def - len_ini) * e01[0],
         w0 / (w0+w1) * (len_def - len_ini) * e01[1]];

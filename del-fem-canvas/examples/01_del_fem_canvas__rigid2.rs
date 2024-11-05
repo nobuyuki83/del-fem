@@ -1,165 +1,12 @@
-use del_geo_core::vec2;
-
-#[derive(Clone)]
-struct RigidBody {
-    vtx2xy: Vec<f32>,
-    pos: [f32; 2],
-    velo: [f32; 2],
-    theta: f32,
-    omega: f32,
-    is_fix: bool,
-    pos_tmp: [f32; 2],
-    theta_tmp: f32,
-    mass: f32,
-    I: f32
-}
-
-impl RigidBody {
-    fn local2world(&self) -> [f32; 9] {
-        let r0 = del_geo_core::mat3_col_major::from_rotate(self.theta);
-        let t0 = del_geo_core::mat3_col_major::from_translate(&self.pos);
-        del_geo_core::mat3_col_major::mult_mat_col_major(&t0, &r0)
-    }
-}
-
-
-fn polygon2_sdf(
-    shape: &Vec<f32>,
-    q: &[f32; 2]) -> (f32, [f32; 2])
-{
-    use del_geo_core::vec2;
-    let nej = shape.len() / 2;
-    let mut min_dist = -1.0;
-    let mut winding_number = 0f32;
-    let mut pos_near = [0f32; 2];
-    let mut ie_near = 0;
-    for iej in 0..nej {
-        let ps = arrayref::array_ref!(shape, ((iej + 0) % nej)*2, 2);
-        let pe = arrayref::array_ref!(shape, ((iej + 1) % nej)*2, 2);
-        winding_number += del_geo_core::edge2::winding_number(&ps, &pe, q);
-        let (_rm, pm) = del_geo_core::edge2::nearest_point2(ps, pe, q);
-        let dist0 = del_geo_core::edge2::length(&pm, q);
-        if dist0 == 0.0 {
-            dbg!("hoge", pm, ps, pe, q);
-        }
-        if min_dist > 0. && dist0 > min_dist { continue; }
-        min_dist = dist0;
-        pos_near = pm;
-        ie_near = iej;
-    }
-    //
-    let normal_out = {
-        // if distance is small use edge's normal
-        let ps = arrayref::array_ref!(shape, ((ie_near + 0) % nej)*2, 2);
-        let pe = arrayref::array_ref!(shape, ((ie_near + 1) % nej)*2, 2);
-        let ne = vec2::sub(pe, ps);
-        let ne = vec2::rotate(&ne, -std::f32::consts::PI * 0.5);
-        vec2::normalize(&ne)
-    };
-    //
-    // dbg!(winding_number);
-    if (winding_number - 1.0).abs() < 0.5 { // inside
-        let normal = if min_dist < 1.0e-5 {
-            normal_out
-        } else {
-            vec2::normalize(&vec2::sub(&pos_near, q))
-        };
-        (-min_dist, normal)
-    } else {
-        let normal = if min_dist < 1.0e-5 {
-            normal_out
-        } else {
-            vec2::normalize(&vec2::sub(q, &pos_near))
-        };
-        (min_dist, normal)
-    }
-}
-
-#[test]
-fn test_polygon2_sdf() {
-    let vtx2xy = vec!(
-        0., 0.,
-        1.0, 0.0,
-        1.0, 0.2,
-        0.0, 0.2);
-    use del_geo_core::vec2;
-    {
-        let (sdf, normal) = polygon2_sdf(&vtx2xy, &[0.01, 0.1]);
-        assert!((sdf + 0.01).abs() < 1.0e-5);
-        assert!(vec2::length(&vec2::sub(&normal, &[-1., 0.])) < 1.0e-5);
-    }
-    {
-        let (sdf, normal) = polygon2_sdf(&vtx2xy, &[-0.01, 0.1]);
-        assert!((sdf - 0.01).abs() < 1.0e-5);
-        assert!(vec2::length(&vec2::sub(&normal, &[-1., 0.])) < 1.0e-5);
-    }
-}
-
-fn ResolveContact(
-    rbA: &mut RigidBody,
-    rbB: &mut RigidBody,
-    penetration: f32,
-    pA: &[f32; 2],
-    pB: &[f32; 2],
-    nB: &[f32; 2]) -> f32
-{
-    use del_geo_core::vec2;
-    let mut deno = 0f32;
-    if !rbA.is_fix {
-        deno += 1. / rbA.mass;
-        let t0 = vec2::area_quadrilateral(&vec2::sub(pA, &rbA.pos), nB);
-        deno += t0 * t0 / rbA.I;
-    }
-    if !rbB.is_fix {
-        deno += 1. / rbB.mass;
-        let t0 = vec2::area_quadrilateral(&vec2::sub(pB, &rbB.pos), &[-nB[0], -nB[1]]);
-        deno += t0 * t0 / rbB.I;
-    }
-    let lambda = penetration / deno; // force*dt*dt
-    if !rbA.is_fix {
-        rbA.pos_tmp = [
-            rbA.pos_tmp[0] + (lambda / rbA.mass) * nB[0],
-            rbA.pos_tmp[1] + (lambda / rbA.mass) * nB[1] ];
-        let tA = vec2::area_quadrilateral(&vec2::sub(pA, &rbA.pos), &nB);
-        rbA.theta_tmp += tA * lambda / rbA.I;
-        // dbg!(pA, rbA.pos, tA, lambda, rbA.I);
-    }
-    if !rbB.is_fix {
-        rbB.pos_tmp = [
-            rbB.pos_tmp[0] - (lambda / rbB.mass) * nB[0],
-            rbB.pos_tmp[1] - (lambda / rbB.mass) * nB[1] ];
-        let tB = vec2::area_quadrilateral(&vec2::sub(pB, &rbB.pos), &[-nB[0], -nB[1]]);
-        // dbg!(tB, lambda, rbB.I);
-        rbB.theta_tmp += tB * lambda / rbB.I;
-    }
-    lambda
-}
-
 fn step_time(
-    rbs: &mut [RigidBody],
+    rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody],
     dt: f32,
     gravity: &[f32; 2])
 {
-    for rb in rbs.iter_mut() {
-        if rb.is_fix {
-            rb.pos_tmp = rb.pos;
-            rb.theta_tmp = rb.theta;
-            continue;
-        }
-        rb.velo = [
-            rb.velo[0] + gravity[0] * dt,
-            rb.velo[1] + gravity[1] * dt];
-        rb.pos_tmp = [
-            rb.pos[0] + dt * rb.velo[0],
-            rb.pos[1] + dt * rb.velo[1]];
-        rb.theta_tmp = rb.theta + dt * rb.omega;
-    }
-    //
-
     use del_geo_core::mat3_col_major;
+    rbs.iter_mut().for_each(|rb| rb.initialize_pbd_step(dt, gravity));
     for irb in 0..rbs.len() {
         let lcli2world = rbs[irb].local2world();
-        dbg!(rbs[irb].theta);
         for jrb in 0..rbs.len() {
             if irb == jrb { continue; }
             let lclj2world = rbs[jrb].local2world();
@@ -169,16 +16,16 @@ fn step_time(
             for ivtx in 0..rbs[irb].vtx2xy.len() / 2 {
                 let xyi = arrayref::array_ref!(rbs[irb].vtx2xy, ivtx*2, 2);
                 let xyi_lclj = mat3_col_major::transform_homogeneous(&lcli2lclj, xyi).unwrap();
-                let (sdf, nrm) = polygon2_sdf(&rbs[jrb].vtx2xy, &xyi_lclj);
+                let (sdf, nrm) = del_msh_core::polyloop2::wdw_sdf_(&rbs[jrb].vtx2xy, &xyi_lclj);
                 if sdf > 0.0 { continue; }
-                dbg!(sdf);
+                // dbg!(irb, jrb, xyi, xyi_lclj, sdf, nrm);
                 let xyi_world = mat3_col_major::transform_homogeneous(&lcli2world, &xyi).unwrap();
-                let nrmB = mat3_col_major::transform_direction(&lcli2world, &nrm);
+                let nrmj = mat3_col_major::transform_direction(&lclj2world, &nrm);
                 let mut rbi = rbs[irb].clone();
                 let mut rbj = rbs[jrb].clone();
-                let lambda = ResolveContact(
+                let _lambda = del_fem_core::pbd_rigidbody2::resolve_contact(
                     &mut rbi, &mut rbj,
-                    -sdf, &xyi_world, &xyi_world, &nrmB);
+                    -sdf, &xyi_world, &xyi_world, &nrmj);
                 rbs[irb] = rbi;
                 rbs[jrb] = rbj;
             }
@@ -186,19 +33,7 @@ fn step_time(
     }
 
     // finalize position, set velocity
-    for rb in rbs.iter_mut() {
-        if rb.is_fix {
-            rb.velo = [0f32; 2];
-            rb.omega = 0.0;
-            continue;
-        }
-        rb.velo = [
-            (rb.pos_tmp[0] - rb.pos[0]) / dt,
-            (rb.pos_tmp[1] - rb.pos[1]) / dt];
-        rb.omega = (rb.theta_tmp - rb.theta) / dt;
-        rb.pos = rb.pos_tmp;
-        rb.theta = rb.theta_tmp;
-    }
+    rbs.iter_mut().for_each(|rb| rb.finalize_pbd_step(dt));
 }
 
 
@@ -269,6 +104,7 @@ pA,pB,tangent_dir,velo_slip,c.lambda/dt);
 //}
 
 fn main() {
+    use del_fem_core::pbd_rigidbody2::RigidBody;
     let mut rb0 = RigidBody {
         vtx2xy: vec!(
             -1.0, 0.0,
@@ -279,7 +115,8 @@ fn main() {
             -0.9, 0.2,
             -0.9, 0.8,
             -1.0, 0.8),
-        pos: [0f32; 2],
+        pos_cg_ref: [0f32; 2],
+        pos_cg_def: [0f32; 2],
         velo: [0f32; 2],
         theta: 0f32,
         is_fix: true,
@@ -287,7 +124,7 @@ fn main() {
         pos_tmp: [0f32; 2],
         theta_tmp: 0f32,
         mass: 0f32,
-        I: 0f32
+        moment_of_inertia: 0f32
     };
     let mut rb1 = RigidBody {
         vtx2xy: vec!(
@@ -295,24 +132,27 @@ fn main() {
             0.4, 0.0,
             0.4, 0.2,
             0.0, 0.2),
-        pos: [0f32, 0.5f32],
+        pos_cg_ref: [0f32; 2],
+        pos_cg_def: [0f32, 0.5f32],
         velo: [0f32; 2],
-        theta: std::f32::consts::PI * 0.3,
+        theta: std::f32::consts::PI * 0.1,
         is_fix: false,
         omega: 0f32,
         pos_tmp: [0f32; 2],
         theta_tmp: 0f32,
         mass: 0f32,
-        I: 0f32
+        moment_of_inertia: 0f32
     };
     let mut rbs = vec!(rb0, rb1);
     for rb in rbs.iter_mut() {
         let rho = 1.0;
         let area = del_msh_core::polyloop2::area_(&rb.vtx2xy);
         let cg = del_msh_core::polyloop2::cog_as_face(&rb.vtx2xy);
-        let moment = del_msh_core::polyloop2::RotationalMomentPolar_Polygon2(&rb.vtx2xy, &cg);
+        let moment = del_msh_core::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
         rb.mass = rho * area;
-        rb.I = rho * moment;
+        rb.moment_of_inertia = rho * moment;
+        rb.pos_cg_ref = cg;
+        dbg!(cg);
     }
     //
     let image_shape = (300, 300);
@@ -322,12 +162,13 @@ fn main() {
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
     );
     let transform_world2pix: [f32; 9] = {
-        let t0 = del_geo_core::aabb2::to_transformation_world2unit_ortho_preserve_asp(&[-1.2, -0.2, 1.2, 1.0]);
-        let t1 = del_geo_core::mat3_col_major::transform_unit2pix(image_shape);
+        let t0 = del_geo_core::aabb2::to_transformation_world2unit_ortho_preserve_asp(
+            &[-1.2, -0.2, 1.2, 1.0]);
+        let t1 = del_geo_core::mat3_col_major::from_transform_unit2pix(image_shape);
         del_geo_core::mat3_col_major::mult_mat_col_major(&t1, &t0)
     };
 
-    for itr in 0..30 {
+    for itr in 0..200 {
         step_time(&mut rbs, 0.01, &[0.0, -10.0]);
         canvas.clear(0);
         for rb in rbs.iter() {

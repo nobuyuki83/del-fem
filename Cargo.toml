@@ -1,11 +1,11 @@
 [workspace]
-members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-ls"]
+members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls"]
 resolver = "2"
 
 
 [workspace.package]
 name = "del-fem"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
@@ -24,7 +24,7 @@ rand_chacha = "0.3.1"
 rand = "0.8.5"
 
 # internal my library
-del-ls = { path = "del-ls" }
+del-fem-ls = { path = "del-fem-ls" }
 del-fem-core = { path = "del-fem-core" }
 
 # external my library
@@ -33,9 +33,14 @@ del-fem-core = { path = "del-fem-core" }
 # del-msh-core = { path = "../del-msh/del-msh-core" }
 # del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
 
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+
+del-geo-core = "0.1.32"
+del-geo-nalgebra = "0.1.32"
+del-msh-core = "0.1.36"
+del-canvas-cpu = "0.1.2"
 
 

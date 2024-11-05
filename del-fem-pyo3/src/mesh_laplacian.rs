@@ -1,8 +1,9 @@
 use numpy::PyUntypedArrayMethods;
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::Python;
+use pyo3::prelude::PyModuleMethods;
 
-pub fn add_functions(_py: pyo3::Python, m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
+pub fn add_functions(_py: pyo3::Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> pyo3::PyResult<()> {
     use pyo3::wrap_pyfunction;
     // topology
     m.add_function(wrap_pyfunction!(

@@ -33,7 +33,7 @@ where
             - cauchy[0][1] * cauchy[1][0]
             - cauchy[0][2] * cauchy[2][0]
             - cauchy[1][2] * cauchy[2][1];
-    let (p3c, c_inv) = del_geo_core::mat3_array_of_array::det_inv(&cauchy);
+    let (p3c, c_inv) = del_geo_core::mat3_array_of_array::det_inv(cauchy);
     let tmp1 = one / p3c.powf(one3rd);
     let tmp2 = one / p3c.powf(two3rd);
     let pi1c = p1c * tmp1; // 1st reduced invariant
@@ -110,7 +110,7 @@ where
             ddwrddcv[istdim][jstdim] = ddwrddc[idim][jdim][kdim][ldim];
         }
     }
-    return (wr, dwrdcv, ddwrddcv);
+    (wr, dwrdcv, ddwrddcv)
 }
 
 #[test]

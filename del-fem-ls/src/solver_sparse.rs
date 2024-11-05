@@ -171,5 +171,5 @@ where
         let sq_norm_res = dot(r_vec, r_vec); // DotX(r_vec, r_vec, N);
         conv_hist.push(sq_norm_res.sqrt());
     }
-    return conv_hist;
+    conv_hist
 }
