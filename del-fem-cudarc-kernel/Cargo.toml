@@ -1,0 +1,20 @@
+[package]
+name = "del-fem-cudarc-kernel"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "hogehoge"
+
+[dependencies]
+num-traits = "0.2.19"
+anyhow = "1.0.86"
+slice-of-array = "0.3.2"
+cudarc = { version = "=0.11.8", features = ["std", "driver", "nvrtc", "cuda-version-from-build-system", "dynamic-linking"], default-features=false }
+# workspace
+del-msh-core = { path = "../../del-msh/del-msh-core" }
+del-geo-core = { path = "../../del-geo/del-geo-core" }
+# local
+# del-canvas-cpu = { path = "../del-canvas-cpu" }
+
+[build-dependencies]
+bindgen_cuda = "0.1.5"

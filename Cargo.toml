@@ -1,5 +1,6 @@
 [workspace]
 members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls"]
+exclude = ["del-fem-cudarc", "del-fem-cudarc-kernel"]
 resolver = "2"
 
 
@@ -33,14 +34,16 @@ del-fem-core = { path = "del-fem-core" }
 # del-msh-core = { path = "../del-msh/del-msh-core" }
 # del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
 
-# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-# del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+# for github push
+del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
 
-del-geo-core = "0.1.32"
-del-geo-nalgebra = "0.1.32"
-del-msh-core = "0.1.36"
-del-canvas-cpu = "0.1.2"
+# for crate publish
+# del-geo-core = "0.1.32"
+# del-geo-nalgebra = "0.1.32"
+# del-msh-core = "0.1.36"
+# del-canvas-cpu = "0.1.2"
 
 

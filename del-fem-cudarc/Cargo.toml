@@ -1,0 +1,14 @@
+[package]
+name = "del-fem-cudarc"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "hogehoge"
+
+[dependencies]
+anyhow = "1.0.93"
+cudarc = { version = "=0.11.8", features = ["std", "cublas", "driver", "nvrtc", "cuda-version-from-build-system", "dynamic-linking"], default-features=false }
+
+del-msh-core = {path = "../../del-msh/del-msh-core"}
+del-fem-cudarc-kernel = {path="../del-fem-cudarc-kernel"}
+
