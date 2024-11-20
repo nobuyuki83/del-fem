@@ -23,7 +23,7 @@ fn example1() {
     };
 
     // visualization related stuff
-    let mut canvas = del_canvas_cpu::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__1.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
@@ -101,7 +101,7 @@ fn example2() {
     let pnt2massinv = vec!(1f32; pnt2xy_def.len() / 2);
 
     // visualization related stuff
-    let mut canvas = del_canvas_cpu::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__2.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
@@ -249,7 +249,7 @@ fn example3() {
     let pos_attach= [-0.0, -0.13];
 
     // visualization related stuff
-    let mut canvas = del_canvas_cpu::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__3.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],

@@ -156,7 +156,7 @@ fn main() {
     }
     //
     let image_shape = (300, 300);
-    let mut canvas = del_canvas_cpu::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__rigid2.gif"),
         image_shape,
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
