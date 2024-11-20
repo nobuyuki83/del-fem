@@ -1,8 +1,6 @@
 [workspace]
 members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls"]
-exclude = ["del-fem-cudarc", "del-fem-cudarc-kernel"]
 resolver = "2"
-
 
 [workspace.package]
 name = "del-fem"
@@ -28,17 +26,17 @@ rand = "0.8.5"
 del-fem-ls = { path = "del-fem-ls" }
 del-fem-core = { path = "del-fem-core" }
 
-# external my library
-# del-geo-core = { path = "../del-geo/del-geo-core" }
-# del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-# del-msh-core = { path = "../del-msh/del-msh-core" }
-# del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
+# for development
+del-geo-core = { path = "../del-geo/del-geo-core" }
+del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
+del-msh-core = { path = "../del-msh/del-msh-core" }
+del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
 
 # for github push
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-canvas-cpu = { git = "https://github.com/nobuyuki83/del-canvas" }
 
 # for crate publish
 # del-geo-core = "0.1.32"

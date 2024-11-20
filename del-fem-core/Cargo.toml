@@ -1,13 +1,11 @@
 [package]
 name = "del-fem-core"
 description = "finite element method (FEM) utility codes"
+documentation = "https://docs.rs/del_fem-core"
 version.workspace = true
-edition = "2021"
-documentation = "https://docs.rs/del_fem"
-repository = "https://github.com/nobuyuki83/del-fem/"
-license = "MIT"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 num-traits = {workspace = true}
