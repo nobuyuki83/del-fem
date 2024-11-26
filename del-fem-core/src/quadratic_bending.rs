@@ -1,7 +1,6 @@
-pub fn wdw<T>(
-    p_ini: &[[T; 3]; 4],
-    p_def: &[[T; 3]; 4]) -> ([T; 3], [[[T; 3]; 4]; 3])
-where T: num_traits::Float + std::ops::AddAssign,
+pub fn wdw<T>(p_ini: &[[T; 3]; 4], p_def: &[[T; 3]; 4]) -> ([T; 3], [[[T; 3]; 4]; 3])
+where
+    T: num_traits::Float + std::ops::AddAssign,
 {
     let two = T::one() + T::one();
     let three = two + T::one();
@@ -24,7 +23,8 @@ where T: num_traits::Float + std::ops::AddAssign,
         (-cot023 - cot032) * tmp0,
         (-cot123 - cot132) * tmp0,
         (cot032 + cot132) * tmp0,
-        (cot023 + cot123) * tmp0];
+        (cot023 + cot123) * tmp0,
+    ];
     let mut w = [T::zero(); 3];
     w[0] = k[0] * p_def[0][0] + k[1] * p_def[1][0] + k[2] * p_def[2][0] + k[3] * p_def[3][0];
     w[1] = k[0] * p_def[0][1] + k[1] * p_def[1][1] + k[2] * p_def[2][1] + k[3] * p_def[3][1];
@@ -61,13 +61,12 @@ fn test() {
             p1[i_no][i_dim] += eps;
             p1
         };
-        let (c1,_) = wdw(&p_ini, &p1_def);
+        let (c1, _) = wdw(&p_ini, &p1_def);
         for j_dim in 0..3 {
             let v_ana = dcdp[j_dim][i_no][i_dim];
             let v_num = (c1[j_dim] - c0[j_dim]) / eps;
             // println!("{} {}", v_num, v_ana);
-            assert!((v_ana-v_num).abs()<1.0e-6f64,"{} {}", v_num, v_ana);
+            assert!((v_ana - v_num).abs() < 1.0e-6f64, "{} {}", v_num, v_ana);
         }
     }
-
 }

@@ -1,31 +1,33 @@
-fn step_time(
-    rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody],
-    dt: f32,
-    gravity: &[f32; 2])
-{
+fn step_time(rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody], dt: f32, gravity: &[f32; 2]) {
     use del_geo_core::mat3_col_major;
-    rbs.iter_mut().for_each(|rb| rb.initialize_pbd_step(dt, gravity));
+    rbs.iter_mut()
+        .for_each(|rb| rb.initialize_pbd_step(dt, gravity));
     for irb in 0..rbs.len() {
         let lcli2world = rbs[irb].local2world();
         for jrb in 0..rbs.len() {
-            if irb == jrb { continue; }
+            if irb == jrb {
+                continue;
+            }
             let lclj2world = rbs[jrb].local2world();
             let lcli2lclj = mat3_col_major::mult_mat_col_major(
                 &mat3_col_major::try_inverse(&lclj2world).unwrap(),
-                &lcli2world);
+                &lcli2world,
+            );
             for ivtx in 0..rbs[irb].vtx2xy.len() / 2 {
-                let xyi = arrayref::array_ref!(rbs[irb].vtx2xy, ivtx*2, 2);
+                let xyi = arrayref::array_ref!(rbs[irb].vtx2xy, ivtx * 2, 2);
                 let xyi_lclj = mat3_col_major::transform_homogeneous(&lcli2lclj, xyi).unwrap();
                 let (sdf, nrm) = del_msh_core::polyloop2::wdw_sdf_(&rbs[jrb].vtx2xy, &xyi_lclj);
-                if sdf > 0.0 { continue; }
+                if sdf > 0.0 {
+                    continue;
+                }
                 // dbg!(irb, jrb, xyi, xyi_lclj, sdf, nrm);
                 let xyi_world = mat3_col_major::transform_homogeneous(&lcli2world, &xyi).unwrap();
                 let nrmj = mat3_col_major::transform_direction(&lclj2world, &nrm);
                 let mut rbi = rbs[irb].clone();
                 let mut rbj = rbs[jrb].clone();
                 let _lambda = del_fem_core::pbd_rigidbody2::resolve_contact(
-                    &mut rbi, &mut rbj,
-                    -sdf, &xyi_world, &xyi_world, &nrmj);
+                    &mut rbi, &mut rbj, -sdf, &xyi_world, &xyi_world, &nrmj,
+                );
                 rbs[irb] = rbi;
                 rbs[jrb] = rbj;
             }
@@ -35,7 +37,6 @@ fn step_time(
     // finalize position, set velocity
     rbs.iter_mut().for_each(|rb| rb.finalize_pbd_step(dt));
 }
-
 
 /*
 // find & resolve contact
@@ -106,15 +107,9 @@ pA,pB,tangent_dir,velo_slip,c.lambda/dt);
 fn main() {
     use del_fem_core::pbd_rigidbody2::RigidBody;
     let mut rb0 = RigidBody {
-        vtx2xy: vec!(
-            -1.0, 0.0,
-            1.0, 0.0,
-            1.0, 0.8,
-            0.9, 0.8,
-            0.9, 0.2,
-            -0.9, 0.2,
-            -0.9, 0.8,
-            -1.0, 0.8),
+        vtx2xy: vec![
+            -1.0, 0.0, 1.0, 0.0, 1.0, 0.8, 0.9, 0.8, 0.9, 0.2, -0.9, 0.2, -0.9, 0.8, -1.0, 0.8,
+        ],
         pos_cg_ref: [0f32; 2],
         pos_cg_def: [0f32; 2],
         velo: [0f32; 2],
@@ -124,14 +119,10 @@ fn main() {
         pos_tmp: [0f32; 2],
         theta_tmp: 0f32,
         mass: 0f32,
-        moment_of_inertia: 0f32
+        moment_of_inertia: 0f32,
     };
     let mut rb1 = RigidBody {
-        vtx2xy: vec!(
-            0.0, 0.0,
-            0.4, 0.0,
-            0.4, 0.2,
-            0.0, 0.2),
+        vtx2xy: vec![0.0, 0.0, 0.4, 0.0, 0.4, 0.2, 0.0, 0.2],
         pos_cg_ref: [0f32; 2],
         pos_cg_def: [0f32, 0.5f32],
         velo: [0f32; 2],
@@ -141,9 +132,9 @@ fn main() {
         pos_tmp: [0f32; 2],
         theta_tmp: 0f32,
         mass: 0f32,
-        moment_of_inertia: 0f32
+        moment_of_inertia: 0f32,
     };
-    let mut rbs = vec!(rb0, rb1);
+    let mut rbs = vec![rb0, rb1];
     for rb in rbs.iter_mut() {
         let rho = 1.0;
         let area = del_msh_core::polyloop2::area_(&rb.vtx2xy);
@@ -162,8 +153,9 @@ fn main() {
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
     );
     let transform_world2pix: [f32; 9] = {
-        let t0 = del_geo_core::aabb2::to_transformation_world2unit_ortho_preserve_asp(
-            &[-1.2, -0.2, 1.2, 1.0]);
+        let t0 = del_geo_core::aabb2::to_transformation_world2unit_ortho_preserve_asp(&[
+            -1.2, -0.2, 1.2, 1.0,
+        ]);
         let t1 = del_geo_core::mat3_col_major::from_transform_unit2pix(image_shape);
         del_geo_core::mat3_col_major::mult_mat_col_major(&t1, &t0)
     };
@@ -173,9 +165,8 @@ fn main() {
         canvas.clear(0);
         for rb in rbs.iter() {
             let obj2world = rb.local2world();
-            let obj2pix = del_geo_core::mat3_col_major::mult_mat_col_major(
-                &transform_world2pix,
-                &obj2world);
+            let obj2pix =
+                del_geo_core::mat3_col_major::mult_mat_col_major(&transform_world2pix, &obj2world);
             del_canvas_cpu::rasterize_polygon::stroke::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,

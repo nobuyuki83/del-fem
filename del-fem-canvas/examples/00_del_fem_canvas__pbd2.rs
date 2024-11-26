@@ -16,8 +16,8 @@ fn example1() {
         }
         pnt2xy
     };
-    let pnt2massinv= {
-        let mut pnt2massinv = vec!(1f32; pnt2xy_ini.len() / 2);
+    let pnt2massinv = {
+        let mut pnt2massinv = vec![1f32; pnt2xy_ini.len() / 2];
         pnt2massinv[0] = 0f32;
         pnt2massinv
     };
@@ -28,38 +28,41 @@ fn example1() {
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
     );
-    let transform_world2pix: [f32; 9]
-        = del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
+    let transform_world2pix: [f32; 9] =
+        del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
     let mut pnt2xy_def = pnt2xy_ini.clone();
     let mut pnt2xy_new = pnt2xy_def.clone();
-    let mut pnt2velo = vec!(0f32; pnt2xy_ini.len());
+    let mut pnt2velo = vec![0f32; pnt2xy_ini.len()];
     for i_step in 0..1000 {
         let num_pnt = pnt2xy_ini.len() / 2;
         for i_pnt in 0..num_pnt {
-            if pnt2massinv[i_pnt] == 0f32 { continue; }
-            pnt2xy_new[i_pnt * 2 + 0] = pnt2xy_def[i_pnt * 2 + 0] + dt * dt * gravity[0] + dt * pnt2velo[i_pnt * 2 + 0];
-            pnt2xy_new[i_pnt * 2 + 1] = pnt2xy_def[i_pnt * 2 + 1] + dt * dt * gravity[1] + dt * pnt2velo[i_pnt * 2 + 1];
+            if pnt2massinv[i_pnt] == 0f32 {
+                continue;
+            }
+            pnt2xy_new[i_pnt * 2 + 0] =
+                pnt2xy_def[i_pnt * 2 + 0] + dt * dt * gravity[0] + dt * pnt2velo[i_pnt * 2 + 0];
+            pnt2xy_new[i_pnt * 2 + 1] =
+                pnt2xy_def[i_pnt * 2 + 1] + dt * dt * gravity[1] + dt * pnt2velo[i_pnt * 2 + 1];
         }
         for i_seg in 0..num_pnt - 1 {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
-            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0*2, 2);
-            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1*2, 2);
-            let p0_ini = arrayref::array_ref!(pnt2xy_ini, ip0*2, 2);
-            let p1_ini = arrayref::array_ref!(pnt2xy_ini, ip1*2, 2);
+            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2);
+            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2);
+            let p0_ini = arrayref::array_ref!(pnt2xy_ini, ip0 * 2, 2);
+            let p1_ini = arrayref::array_ref!(pnt2xy_ini, ip1 * 2, 2);
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
             let len_ini = del_geo_core::edge2::length(&p0_ini, &p1_ini);
-            let (dp0, dp1) = del_fem_core::spring2::pbd(
-                &p0_def, &p1_def, len_ini, w0, w1);
-            pnt2xy_new[ip0*2+0] += dp0[0];
-            pnt2xy_new[ip0*2+1] += dp0[1];
-            pnt2xy_new[ip1*2+0] += dp1[0];
-            pnt2xy_new[ip1*2+1] += dp1[1];
+            let (dp0, dp1) = del_fem_core::spring2::pbd(&p0_def, &p1_def, len_ini, w0, w1);
+            pnt2xy_new[ip0 * 2 + 0] += dp0[0];
+            pnt2xy_new[ip0 * 2 + 1] += dp0[1];
+            pnt2xy_new[ip1 * 2 + 0] += dp1[0];
+            pnt2xy_new[ip1 * 2 + 1] += dp1[1];
         }
         for i in 0..pnt2xy_ini.len() {
-            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i])/dt;
+            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i]) / dt;
             pnt2xy_def[i] = pnt2xy_new[i];
         }
         if i_step % 10 == 0 {
@@ -98,7 +101,7 @@ fn example2() {
         }
         pnt2xy
     };
-    let pnt2massinv = vec!(1f32; pnt2xy_def.len() / 2);
+    let pnt2massinv = vec![1f32; pnt2xy_def.len() / 2];
 
     // visualization related stuff
     let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
@@ -106,11 +109,11 @@ fn example2() {
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
     );
-    let transform_world2pix: [f32; 9]
-        = del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
+    let transform_world2pix: [f32; 9] =
+        del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
     let mut pnt2xy_new = pnt2xy_def.clone();
-    let mut pnt2velo = vec!(0f32; pnt2xy_def.len());
+    let mut pnt2velo = vec![0f32; pnt2xy_def.len()];
     for i_step in 0..1000 {
         let num_pnt = pnt2xy_def.len() / 2;
         for i_pnt in 0..num_pnt {
@@ -121,53 +124,51 @@ fn example2() {
         for i_seg in 0..num_pnt - 1 {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
-            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0*2, 2);
-            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1*2, 2);
+            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2);
+            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2);
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
-            let (dp0, dp1) = del_fem_core::spring2::pbd(
-                &p0_def, &p1_def, len_edge, w0, w1);
-            pnt2xy_new[ip0*2+0] += dp0[0];
-            pnt2xy_new[ip0*2+1] += dp0[1];
-            pnt2xy_new[ip1*2+0] += dp1[0];
-            pnt2xy_new[ip1*2+1] += dp1[1];
+            let (dp0, dp1) = del_fem_core::spring2::pbd(&p0_def, &p1_def, len_edge, w0, w1);
+            pnt2xy_new[ip0 * 2 + 0] += dp0[0];
+            pnt2xy_new[ip0 * 2 + 1] += dp0[1];
+            pnt2xy_new[ip1 * 2 + 0] += dp1[0];
+            pnt2xy_new[ip1 * 2 + 1] += dp1[1];
         }
         // angle constraint
         for i_seg in 0..num_pnt - 2 {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
             let ip2 = i_seg + 2;
-            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0*2, 2);
-            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1*2, 2);
-            let p2_def = arrayref::array_ref!(pnt2xy_new, ip2*2, 2);
+            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2);
+            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2);
+            let p2_def = arrayref::array_ref!(pnt2xy_new, ip2 * 2, 2);
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
             let w2 = pnt2massinv[ip2];
-            let dp = del_fem_core::rod2::pbd(
-                &p0_def, &p1_def, p2_def, &[w0, w1, w2], 0f32);
+            let dp = del_fem_core::rod2::pbd(&p0_def, &p1_def, p2_def, &[w0, w1, w2], 0f32);
             //
             let damp = 0.7;
-            pnt2xy_new[ip0*2+0] += damp * dp[0][0];
-            pnt2xy_new[ip0*2+1] += damp * dp[0][1];
-            pnt2xy_new[ip1*2+0] += damp * dp[1][0];
-            pnt2xy_new[ip1*2+1] += damp * dp[1][1];
-            pnt2xy_new[ip2*2+0] += damp * dp[2][0];
-            pnt2xy_new[ip2*2+1] += damp * dp[2][1];
+            pnt2xy_new[ip0 * 2 + 0] += damp * dp[0][0];
+            pnt2xy_new[ip0 * 2 + 1] += damp * dp[0][1];
+            pnt2xy_new[ip1 * 2 + 0] += damp * dp[1][0];
+            pnt2xy_new[ip1 * 2 + 1] += damp * dp[1][1];
+            pnt2xy_new[ip2 * 2 + 0] += damp * dp[2][0];
+            pnt2xy_new[ip2 * 2 + 1] += damp * dp[2][1];
         }
         for i_pnt in 0..pnt2xy_new.len() / 2 {
-            let x = pnt2xy_new[i_pnt*2+0];
-            let y = pnt2xy_new[i_pnt*2+1];
-            let r = (x*x+y*y).sqrt();
+            let x = pnt2xy_new[i_pnt * 2 + 0];
+            let y = pnt2xy_new[i_pnt * 2 + 1];
+            let r = (x * x + y * y).sqrt();
             let r0 = 0.8;
             if r > r0 {
                 let x = x / r * r0;
                 let y = y / r * r0;
-                pnt2xy_new[i_pnt*2+0] = x;
-                pnt2xy_new[i_pnt*2+1] = y;
+                pnt2xy_new[i_pnt * 2 + 0] = x;
+                pnt2xy_new[i_pnt * 2 + 1] = y;
             }
         }
         for i in 0..pnt2xy_def.len() {
-            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i])/dt;
+            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i]) / dt;
             pnt2xy_def[i] = pnt2xy_new[i];
         }
         if i_step % 10 == 0 {
@@ -210,7 +211,7 @@ fn example3() {
         let mut pnt2xy = Vec::<f32>::with_capacity(num_pnt * 2);
         for i_pnt in 0..num_pnt {
             let x = 0.0 + 0.001 * reng.gen::<f32>();
-            let y = -0.8 + 0.05 * (i_pnt as f32) +  0.001 * reng.gen::<f32>();
+            let y = -0.8 + 0.05 * (i_pnt as f32) + 0.001 * reng.gen::<f32>();
             pnt2xy.push(x);
             pnt2xy.push(y);
         }
@@ -218,14 +219,14 @@ fn example3() {
         pnt2xy[1] = -0.75;
         pnt2xy
     };
-    let pnt2massinv= {
-        let mut pnt2massinv = vec!(1f32; pnt2xy_def.len() / 2);
+    let pnt2massinv = {
+        let mut pnt2massinv = vec![1f32; pnt2xy_def.len() / 2];
         pnt2massinv[0] = 0f32;
         pnt2massinv
     };
 
     let mut rb = del_fem_core::pbd_rigidbody2::RigidBody {
-        vtx2xy: vec!(-0.1, -0.1, 0.1, -0.1, 0.1, 0.1, -0.1, 0.1),
+        vtx2xy: vec![-0.1, -0.1, 0.1, -0.1, 0.1, 0.1, -0.1, 0.1],
         pos_cg_ref: [0.0, 0.0],
         pos_cg_def: [0.0, 0.0],
         velo: [0.0, 0.0],
@@ -235,7 +236,7 @@ fn example3() {
         pos_tmp: [0.0, 0.0],
         theta_tmp: 0f32,
         mass: 0f32,
-        moment_of_inertia: 0.0
+        moment_of_inertia: 0.0,
     };
     {
         let rho = 1000.0;
@@ -246,7 +247,7 @@ fn example3() {
         rb.moment_of_inertia = rho * moment;
         rb.pos_cg_ref = cg;
     }
-    let pos_attach= [-0.0, -0.13];
+    let pos_attach = [-0.0, -0.13];
 
     // visualization related stuff
     let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
@@ -254,11 +255,11 @@ fn example3() {
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
     );
-    let transform_world2pix: [f32; 9]
-        = del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
+    let transform_world2pix: [f32; 9] =
+        del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
     let mut pnt2xy_new = pnt2xy_def.clone();
-    let mut pnt2velo = vec!(0f32; pnt2xy_def.len());
+    let mut pnt2velo = vec![0f32; pnt2xy_def.len()];
     for i_step in 0..1000 {
         let num_pnt = pnt2xy_def.len() / 2;
         for i_pnt in 0..num_pnt {
@@ -273,15 +274,16 @@ fn example3() {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
             let (dp0, dp1) = del_fem_core::spring2::pbd(
-                arrayref::array_ref!(pnt2xy_new, ip0*2, 2),
-                arrayref::array_ref!(pnt2xy_new, ip1*2, 2),
+                arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2),
+                arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2),
                 len_edge,
                 pnt2massinv[ip0],
-                pnt2massinv[ip1]);
-            pnt2xy_new[ip0*2+0] += dp0[0];
-            pnt2xy_new[ip0*2+1] += dp0[1];
-            pnt2xy_new[ip1*2+0] += dp1[0];
-            pnt2xy_new[ip1*2+1] += dp1[1];
+                pnt2massinv[ip1],
+            );
+            pnt2xy_new[ip0 * 2 + 0] += dp0[0];
+            pnt2xy_new[ip0 * 2 + 1] += dp0[1];
+            pnt2xy_new[ip1 * 2 + 0] += dp1[0];
+            pnt2xy_new[ip1 * 2 + 1] += dp1[1];
         }
         // angle constraint
         for i_seg in 0..num_pnt - 2 {
@@ -289,46 +291,49 @@ fn example3() {
             let ip1 = i_seg + 1;
             let ip2 = i_seg + 2;
             let dp = del_fem_core::rod2::pbd(
-                arrayref::array_ref!(pnt2xy_new, ip0*2, 2),
-                arrayref::array_ref!(pnt2xy_new, ip1*2, 2),
-                arrayref::array_ref!(pnt2xy_new, ip2*2, 2),
+                arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2),
+                arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2),
+                arrayref::array_ref!(pnt2xy_new, ip2 * 2, 2),
                 &[pnt2massinv[ip0], pnt2massinv[ip1], pnt2massinv[ip2]],
-                0f32);
+                0f32,
+            );
             //
             let damp = 0.7;
-            pnt2xy_new[ip0*2+0] += damp * dp[0][0];
-            pnt2xy_new[ip0*2+1] += damp * dp[0][1];
-            pnt2xy_new[ip1*2+0] += damp * dp[1][0];
-            pnt2xy_new[ip1*2+1] += damp * dp[1][1];
-            pnt2xy_new[ip2*2+0] += damp * dp[2][0];
-            pnt2xy_new[ip2*2+1] += damp * dp[2][1];
+            pnt2xy_new[ip0 * 2 + 0] += damp * dp[0][0];
+            pnt2xy_new[ip0 * 2 + 1] += damp * dp[0][1];
+            pnt2xy_new[ip1 * 2 + 0] += damp * dp[1][0];
+            pnt2xy_new[ip1 * 2 + 1] += damp * dp[1][1];
+            pnt2xy_new[ip2 * 2 + 0] += damp * dp[2][0];
+            pnt2xy_new[ip2 * 2 + 1] += damp * dp[2][1];
         }
         {
             let i_pnt = pnt2xy_new.len() / 2 - 1;
-            let p0 = arrayref::array_mut_ref!(pnt2xy_new, i_pnt*2, 2);
+            let p0 = arrayref::array_mut_ref!(pnt2xy_new, i_pnt * 2, 2);
             let damp = 1.0;
             del_fem_core::pbd_rigidbody2::attach(
                 &mut rb,
                 &pos_attach,
                 p0,
-                1.0/pnt2massinv[i_pnt],
-                damp);
+                1.0 / pnt2massinv[i_pnt],
+                damp,
+            );
         }
-        for i_pnt in 0..pnt2xy_new.len() / 2 { // collision
-            let x = pnt2xy_new[i_pnt*2+0];
-            let y = pnt2xy_new[i_pnt*2+1];
-            let r = (x*x+y*y).sqrt();
+        for i_pnt in 0..pnt2xy_new.len() / 2 {
+            // collision
+            let x = pnt2xy_new[i_pnt * 2 + 0];
+            let y = pnt2xy_new[i_pnt * 2 + 1];
+            let r = (x * x + y * y).sqrt();
             let r0 = 0.8;
             if r > r0 {
                 let x = x / r * r0;
                 let y = y / r * r0;
-                pnt2xy_new[i_pnt*2+0] = x;
-                pnt2xy_new[i_pnt*2+1] = y;
+                pnt2xy_new[i_pnt * 2 + 0] = x;
+                pnt2xy_new[i_pnt * 2 + 1] = y;
             }
         }
         // ------------
         for i in 0..pnt2xy_def.len() {
-            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i])/dt;
+            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i]) / dt;
             pnt2xy_def[i] = pnt2xy_new[i];
         }
         rb.finalize_pbd_step(dt);
@@ -357,14 +362,16 @@ fn example3() {
                 let obj2world = rb.local2world();
                 let obj2pix = del_geo_core::mat3_col_major::mult_mat_col_major(
                     &transform_world2pix,
-                    &obj2world);
+                    &obj2world,
+                );
                 del_canvas_cpu::rasterize_polygon::stroke::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &rb.vtx2xy,
                     &obj2pix,
                     0.6,
-                    1);
+                    1,
+                );
             }
             canvas.write();
         }

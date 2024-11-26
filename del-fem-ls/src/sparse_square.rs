@@ -141,7 +141,7 @@ where
     f32: num_traits::AsPrimitive<T>,
 {
     assert_eq!(y_mat.len(), x_mat.len());
-    assert!( y_mat.len() > 0 );
+    assert!(y_mat.len() > 0);
     let num_row = a_mat.row2idx.len() - 1;
     let num_dim = y_mat.len() / num_row;
     assert_eq!(num_dim * num_row, y_mat.len());

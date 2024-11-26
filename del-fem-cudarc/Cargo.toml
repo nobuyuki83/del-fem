@@ -1,0 +1,19 @@
+[package]
+name = "del-fem-cudarc"
+description = "hogehoge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+cuda = ["dep:cudarc", "dep:del-fem-cudarc-kernel"]
+
+[dependencies]
+anyhow.workspace = true
+del-msh-core.workspace = true
+#
+del-fem-cudarc-kernel = {workspace = true, optional = true}
+cudarc = {workspace = true, optional = true}
+
+
+
