@@ -1,5 +1,7 @@
+#[cfg(feature = "cuda")]
 use cudarc::driver::{CudaSlice, DeviceSlice};
 
+#[cfg(feature = "cuda")]
 fn main() -> anyhow::Result<()> {
     let (tri2vtx, vtx2xyz) = del_msh_core::trimesh3_primitive::sphere_yup::<u32, f32>(1., 32, 32);
     let num_vtx = vtx2xyz.len() / 3;
@@ -34,3 +36,6 @@ fn main() -> anyhow::Result<()> {
     )?;
     Ok(())
 }
+
+#[cfg(not(feature = "cuda"))]
+fn main() {}
