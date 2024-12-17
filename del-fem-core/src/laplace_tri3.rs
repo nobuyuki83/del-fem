@@ -7,7 +7,7 @@ pub fn merge_from_mesh<T>(
     idx2val: &mut [T],
     merge_buffer: &mut Vec<usize>,
 ) where
-    T: num_traits::Float + 'static + std::ops::AddAssign,
+    T: num_traits::Float + 'static + std::ops::AddAssign + std::ops::MulAssign,
     f64: num_traits::AsPrimitive<T>,
 {
     for node2vtx in tri2vtx.chunks(3) {

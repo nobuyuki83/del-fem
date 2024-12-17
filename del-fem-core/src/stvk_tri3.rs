@@ -7,7 +7,7 @@
  */
 pub fn wdw<Real>(p_ini: &[[Real; 2]; 3], p_def: &[[Real; 3]; 3]) -> ([Real; 3], [[[Real; 3]; 3]; 3])
 where
-    Real: num_traits::Float,
+    Real: num_traits::Float + std::ops::MulAssign,
 {
     let zero = Real::zero();
     let one = Real::one();

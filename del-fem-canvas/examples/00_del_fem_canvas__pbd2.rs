@@ -1,4 +1,4 @@
-fn example1() {
+fn example1() -> anyhow::Result<()> {
     // constant value during simulation
     let gravity = [0., -10.];
     let dt = 0.01;
@@ -23,11 +23,11 @@ fn example1() {
     };
 
     // visualization related stuff
-    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__1.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
-    );
+    )?;
     let transform_world2pix: [f32; 9] =
         del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
@@ -68,7 +68,7 @@ fn example1() {
         if i_step % 10 == 0 {
             canvas.clear(0);
             for p in pnt2xy_def.chunks(2) {
-                del_canvas_cpu::rasterize_circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -80,9 +80,10 @@ fn example1() {
             canvas.write();
         }
     }
+    Ok(())
 }
 
-fn example2() {
+fn example2() -> anyhow::Result<()> {
     // constant value during simulation
     let dt = 0.01;
     let num_edge = 10;
@@ -104,11 +105,11 @@ fn example2() {
     let pnt2massinv = vec![1f32; pnt2xy_def.len() / 2];
 
     // visualization related stuff
-    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__2.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
-    );
+    )?;
     let transform_world2pix: [f32; 9] =
         del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
@@ -173,7 +174,7 @@ fn example2() {
         }
         if i_step % 10 == 0 {
             canvas.clear(0);
-            del_canvas_cpu::rasterize_circle::stroke_dda::<f32, u8>(
+            del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &[0f32, 0f32],
@@ -182,7 +183,7 @@ fn example2() {
                 2,
             );
             for p in pnt2xy_def.chunks(2) {
-                del_canvas_cpu::rasterize_circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -194,9 +195,10 @@ fn example2() {
             canvas.write();
         }
     }
+    Ok(())
 }
 
-fn example3() {
+fn example3() -> anyhow::Result<()> {
     // constant value during simulation
     let dt = 0.005;
     let num_edge = 10;
@@ -250,11 +252,11 @@ fn example3() {
     let pos_attach = [-0.0, -0.13];
 
     // visualization related stuff
-    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__3.gif"),
         (300, 300),
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
-    );
+    )?;
     let transform_world2pix: [f32; 9] =
         del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
@@ -340,7 +342,7 @@ fn example3() {
         // -------------
         if i_step % 10 == 0 {
             canvas.clear(0);
-            del_canvas_cpu::rasterize_circle::stroke_dda::<f32, u8>(
+            del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &[0f32, 0f32],
@@ -349,7 +351,7 @@ fn example3() {
                 2,
             );
             for p in pnt2xy_def.chunks(2) {
-                del_canvas_cpu::rasterize_circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -364,7 +366,7 @@ fn example3() {
                     &transform_world2pix,
                     &obj2world,
                 );
-                del_canvas_cpu::rasterize_polygon::stroke::<f32, u8>(
+                del_canvas::rasterize::polygon::stroke::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &rb.vtx2xy,
@@ -376,10 +378,12 @@ fn example3() {
             canvas.write();
         }
     }
+    Ok(())
 }
 
-fn main() {
-    example1();
-    example2();
-    example3();
+fn main() -> anyhow::Result<()> {
+    example1()?;
+    example2()?;
+    example3()?;
+    Ok(())
 }

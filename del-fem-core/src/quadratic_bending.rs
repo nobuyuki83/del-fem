@@ -1,6 +1,6 @@
 pub fn wdw<T>(p_ini: &[[T; 3]; 4], p_def: &[[T; 3]; 4]) -> ([T; 3], [[[T; 3]; 4]; 3])
 where
-    T: num_traits::Float + std::ops::AddAssign,
+    T: num_traits::Float + std::ops::AddAssign + std::ops::MulAssign,
 {
     let two = T::one() + T::one();
     let three = two + T::one();

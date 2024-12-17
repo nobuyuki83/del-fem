@@ -104,7 +104,7 @@ pA,pB,tangent_dir,velo_slip,c.lambda/dt);
  */
 //}
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     use del_fem_core::pbd_rigidbody2::RigidBody;
     let mut rb0 = RigidBody {
         vtx2xy: vec![
@@ -147,11 +147,11 @@ fn main() {
     }
     //
     let image_shape = (300, 300);
-    let mut canvas = del_canvas_image::canvas_gif::Canvas::new(
+    let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__rigid2.gif"),
         image_shape,
         &vec![0x112F41, 0xED553B, 0xF2B134, 0x068587],
-    );
+    )?;
     let transform_world2pix: [f32; 9] = {
         let t0 = del_geo_core::aabb2::to_transformation_world2unit_ortho_preserve_asp(&[
             -1.2, -0.2, 1.2, 1.0,
@@ -167,7 +167,7 @@ fn main() {
             let obj2world = rb.local2world();
             let obj2pix =
                 del_geo_core::mat3_col_major::mult_mat_col_major(&transform_world2pix, &obj2world);
-            del_canvas_cpu::rasterize_polygon::stroke::<f32, u8>(
+            del_canvas::rasterize::polygon::stroke::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &rb.vtx2xy,
@@ -178,4 +178,5 @@ fn main() {
         }
         canvas.write();
     }
+    Ok(())
 }
