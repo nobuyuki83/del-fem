@@ -18,12 +18,12 @@ where
     let gd0_y = [p_ini[2][0] - p_ini[0][0], p_ini[2][1] - p_ini[0][1], zero];
     let gd0_z = vec3::cross(&gd0_x, &gd0_y);
     let area0 = vec3::norm(&gd0_z) * half;
-    let gd0_z = vec3::scaled(&gd0_z, one / (area0 * two));
+    let gd0_z = vec3::scale(&gd0_z, one / (area0 * two));
 
     let gu0_x = vec3::cross(&gd0_y, &gd0_z);
-    let gu0_x = vec3::normalized(&gu0_x);
+    let gu0_x = vec3::normalize(&gu0_x);
     let gu0_y = vec3::cross(&gd0_z, &gd0_x);
-    let gu0_y = vec3::normalized(&gu0_y);
+    let gu0_y = vec3::normalize(&gu0_y);
 
     let gd1_x = [
         p_def[1][0] - p_def[0][0],
