@@ -23,16 +23,14 @@ fn main() -> anyhow::Result<()> {
     let vtx2rhs_dev = dev.htod_copy(vtx2rhs.clone())?;
     let mut vtx2lhs0_dev: CudaSlice<f32> = dev.alloc_zeros(vtx2rhs_dev.len())?;
     let mut vtx2lhs1_dev: CudaSlice<f32> = dev.alloc_zeros(vtx2lhs0_dev.len())?;
-    let mut vtx2res_dev: CudaSlice<f32> = dev.alloc_zeros(vtx2lhs0_dev.len())?;
-    del_fem_cudarc::diffuse_jacobi::solve(
+    del_fem_cudarc::laplacian_smoothing_jacobi::solve(
         &dev,
         &vtx2idx_dev,
         &idx2vtx_dev,
         lambda,
-        &vtx2rhs_dev,
-        &mut vtx2lhs0_dev,
+        &mut vtx2lhs0_dev.slice_mut(..),
         &mut vtx2lhs1_dev,
-        &mut vtx2res_dev,
+        &vtx2rhs_dev,
     )?;
     Ok(())
 }

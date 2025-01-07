@@ -1,5 +1,5 @@
 [workspace]
-members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls", "del-fem-cudarc"]
+members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls", "del-fem-cudarc", "del-fem-candle"]
 exclude = ["del-fem-cudarc-kernel"]
 resolver = "2"
 
@@ -16,7 +16,7 @@ authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies.cudarc]
-version = "*"
+version = "=0.12.1"
 features = [
     "std", "cublas", "cublaslt", "curand", "driver", "nvrtc",
     "f16", "cuda-version-from-build-system", "dynamic-linking"]
@@ -25,17 +25,19 @@ default-features=false
 [workspace.dependencies]
 num-traits = "0.2.19"
 nalgebra = "0.33.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 arrayref = "0.3.7"
 rand_chacha = "0.3.1"
 rand = "0.8.5"
 anyhow = "1.0.93"
+rayon = "1.10.0"
 
 # internal my library
 del-fem-ls = { path = "del-fem-ls" }
 del-fem-core = { path = "del-fem-core" }
 del-fem-cudarc = { path = "del-fem-cudarc"}
 del-fem-cudarc-kernel = { path = "del-fem-cudarc-kernel"}
+del-fem-candle = { path = "del-fem-candle" }
 
 # for development
 # del-geo-core = { path = "../del-geo/del-geo-core" }

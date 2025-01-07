@@ -1,0 +1,35 @@
+[package]
+name = "del-fem-candle"
+description = "hgoehoge"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+cuda = ["candle-core/cuda", "del-fem-cudarc/cuda"]
+
+[dependencies]
+candle-core = { git = "https://github.com/huggingface/candle.git" }
+rand.workspace = true
+anyhow.workspace = true
+nalgebra.workspace = true
+arrayref.workspace = true
+itertools.workspace = true
+rayon.workspace = true
+del-fem-cudarc.workspace = true
+# del-geo-core.workspace = true
+# del-geo-nalgebra.workspace = true
+# del-raycast-core.workspace = true
+# del-raycast-cudarc.workspace = true
+# del-canvas.workspace = true
+# del-msh-core.workspace = true
+# del-fem-ls.workspace = true
+# del-fem-core.workspace = true
+# candle-core = { git = "https://github.com/huggingface/candle.git"}
+# del-msh-candle = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-msh-candle = { path = "../../del-msh/del-msh-candle" }
+
+[dev-dependencies]
+del-msh-core.workspace = true
