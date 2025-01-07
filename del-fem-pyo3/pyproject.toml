@@ -3,6 +3,7 @@ requires = ["maturin>=0.13,<0.14"]
 build-backend = "maturin"
 
 [project]
+version = "0.1.4"
 name = "del-fem"
 requires-python = ">=3.7"
 classifiers = [
