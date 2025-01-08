@@ -41,4 +41,4 @@ macro_rules! get_cuda_slice_and_device_from_storage_f32 {
     };
 }
 
-mod laplacian_smoothing;
+pub mod laplacian_smoothing;

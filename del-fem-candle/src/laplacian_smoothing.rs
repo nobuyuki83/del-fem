@@ -1,6 +1,6 @@
 #[cfg(feature = "cuda")]
 use candle_core::CudaStorage;
-use candle_core::{CpuStorage, CustomOp1, Device, Layout, Shape, Tensor};
+use candle_core::{CpuStorage, CustomOp1, Layout, Shape, Tensor};
 
 #[allow(dead_code)]
 fn compute_residual_norm(
@@ -38,7 +38,7 @@ fn compute_residual_norm(
 ///
 /// grad f(`vtx2vals`) = `vtx2vals` - `vtx2trgs` + `lambda` * L * `vtx2vals` = 0
 /// => (I + `lambda` * L)`vtx2vals` = `vtx2trgs`
-struct LaplacianSmoothing {
+pub struct LaplacianSmoothing {
     pub lambda: f32,
     pub vtx2idx: Tensor,
     pub idx2vtx: Tensor,
@@ -158,17 +158,17 @@ impl CustomOp1 for LaplacianSmoothing {
 }
 
 #[test]
-fn hoge() -> candle_core::Result<()> {
+fn test_laplacian_smoothing() -> candle_core::Result<()> {
     let (tri2vtx, vtx2xyz) = del_msh_core::trimesh3_primitive::sphere_yup(1f32, 512, 512);
     let num_vtx = vtx2xyz.len() / 3;
     println!("num_vtx: {}", num_vtx);
     let (vtx2idx, idx2vtx) =
         del_msh_core::vtx2vtx::from_uniform_mesh::<u32>(&tri2vtx, 3, num_vtx, false);
     let n = vtx2idx.len();
-    let vtx2idx = Tensor::from_vec(vtx2idx, n, &Device::Cpu)?;
+    let vtx2idx = Tensor::from_vec(vtx2idx, n, &candle_core::Device::Cpu)?;
     let n = idx2vtx.len();
-    let idx2vtx = Tensor::from_vec(idx2vtx, n, &Device::Cpu)?;
-    let vtx2vars_in = Tensor::rand(-1f32, 1f32, (num_vtx, 3), &Device::Cpu)?;
+    let idx2vtx = Tensor::from_vec(idx2vtx, n, &candle_core::Device::Cpu)?;
+    let vtx2vars_in = Tensor::rand(-1f32, 1f32, (num_vtx, 3), &candle_core::Device::Cpu)?;
     let layer = LaplacianSmoothing {
         lambda: 1.0,
         num_iter: 100,
