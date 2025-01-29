@@ -1,6 +1,8 @@
 [package]
 name = "del-fem-cudarc-kernel"
-description = "hogehoge"
+description = "Cuda PTX for the fem operations"
+publish = true
+version = "0.1.0"
 
 [dependencies]
 
