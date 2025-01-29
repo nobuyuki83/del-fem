@@ -2,6 +2,7 @@
 name = "del-fem-cudarc-kernel"
 description = "Cuda PTX for the fem operations"
 publish = true
+license = "MIT"
 version = "0.1.0"
 
 [dependencies]
