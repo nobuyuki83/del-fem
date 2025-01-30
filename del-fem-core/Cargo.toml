@@ -12,12 +12,12 @@ num-traits = {workspace = true}
 nalgebra = {workspace = true}
 itertools = {workspace = true}
 arrayref = {workspace = true}
-
-# external my library
 del-geo-core = { workspace = true} # "0.1.29"
 del-geo-nalgebra = {workspace = true} # "0.1.29"
 del-msh-core = { workspace = true} # "0.1.34"
 
-# internal
-del-fem-ls = {workspace = true}
-# del-fem-ls = "0.1.4"
+# for develop/push
+#del-fem-ls = {workspace = true}
+
+# for deploy
+del-fem-ls = "0.1.5"
