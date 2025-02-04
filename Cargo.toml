@@ -5,7 +5,7 @@ resolver = "2"
 
 [workspace.package]
 name = "del-fem"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
@@ -14,13 +14,6 @@ license = "MIT"
 authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[workspace.dependencies.cudarc]
-version = "=0.12.1"
-features = [
-    "std", "cublas", "cublaslt", "curand", "driver", "nvrtc",
-    "f16", "cuda-version-from-build-system", "dynamic-linking"]
-default-features=false
 
 [workspace.dependencies]
 num-traits = "0.2.19"
@@ -40,23 +33,23 @@ del-fem-cudarc-kernel = { path = "del-fem-cudarc-kernel"}
 del-fem-candle = { path = "del-fem-candle" }
 
 # for development
-# del-geo-core = { path = "../del-geo/del-geo-core" }
-# del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-# del-msh-core = { path = "../del-msh/del-msh-core" }
-# del-canvas-cpu = { path = "../del-canvas/del-canvas-cpu" }
+del-geo-core = { path = "../del-geo/del-geo-core" }
+del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
+del-msh-core = { path = "../del-msh/del-msh-core" }
+del-canvas = { path = "../del-canvas" }
 # del-canvas-image = {path = "../del-canvas/del-canvas-image"}
 
 # for github push
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
-del-canvas-image = { git = "https://github.com/nobuyuki83/del-canvas" }
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+#del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
+# del-canvas-image = { git = "https://github.com/nobuyuki83/del-canvas" }
 
 # for crate publish
-# del-geo-core = "0.1.32"
-# del-geo-nalgebra = "0.1.32"
-# del-msh-core = "0.1.36"
-# del-canvas-cpu = "0.1.2"
+# del-geo-core = "0.1.33"
+# del-geo-nalgebra = "0.1.33"
+# del-msh-core = "0.1.37"
+
 
 

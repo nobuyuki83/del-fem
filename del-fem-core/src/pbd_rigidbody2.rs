@@ -19,7 +19,7 @@ impl RigidBody {
             -self.pos_cg_ref[0],
             -self.pos_cg_ref[1],
         ]);
-        let r = del_geo_core::mat3_col_major::from_rotate(self.theta);
+        let r = del_geo_core::mat3_col_major::from_rotate_z(self.theta);
         let t1 = del_geo_core::mat3_col_major::from_translate(&self.pos_cg_def);
         let rt0 = del_geo_core::mat3_col_major::mult_mat_col_major(&r, &t0);
         del_geo_core::mat3_col_major::mult_mat_col_major(&t1, &rt0)

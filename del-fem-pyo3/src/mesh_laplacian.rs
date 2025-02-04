@@ -76,6 +76,7 @@ pub fn optimal_rotations_arap_spoke<'a>(
     idx2val: PyReadonlyArray1<'a, f64>,
     mut vtx2rot: numpy::PyReadwriteArray3<'a, f64>,
 ) {
+    use del_geo_core::mat3_col_major::Mat3ColMajor;
     assert!(vtx2xyz_ini.is_c_contiguous());
     let num_vtx = vtx2xyz_ini.shape()[0];
     assert_eq!(vtx2xyz_ini.shape(), [num_vtx, 3]);
@@ -124,6 +125,8 @@ pub fn residual_arap_spoke<'a>(
     vtx2rot: numpy::PyReadonlyArray3<'a, f64>,
     mut vtx2res: numpy::PyReadwriteArray2<'a, f64>,
 ) {
+    use del_geo_core::mat3_col_major::Mat3ColMajor;
+    use del_geo_core::vec3::Vec3;
     assert!(vtx2xyz_ini.is_c_contiguous());
     let num_vtx = vtx2xyz_ini.shape()[0];
     assert!(vtx2xyz_def.is_c_contiguous());
@@ -143,20 +146,21 @@ pub fn residual_arap_spoke<'a>(
     let vtx2res = vtx2res.as_slice_mut().unwrap();
     vtx2res.fill(0.);
     for i_vtx in 0..num_vtx {
-        let r_i = nalgebra::Matrix3::<f64>::from_row_slice(&vtx2rot[i_vtx * 9..i_vtx * 9 + 9]);
-        let p_i = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i_vtx);
-        let q_i = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i_vtx);
+        let r_i = arrayref::array_ref!(&vtx2rot, i_vtx * 9, 9);
+        let p_i = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i_vtx);
+        let q_i = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i_vtx);
         let adj2vtx = &idx2col[vtx2idx[i_vtx]..vtx2idx[i_vtx + 1]];
         let adj2weight = &idx2val[vtx2idx[i_vtx]..vtx2idx[i_vtx + 1]];
         for (&j_vtx, &w) in adj2vtx.iter().zip(adj2weight.iter()) {
-            let r_j = nalgebra::Matrix3::<f64>::from_row_slice(&vtx2rot[j_vtx * 9..j_vtx * 9 + 9]);
-            let p_j = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, j_vtx);
-            let q_j = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, j_vtx);
-            let r = (q_i - q_j) - (r_i + r_j).scale(0.5) * (p_i - p_j);
+            let r_j = arrayref::array_ref![&vtx2rot, j_vtx * 9, 9];
+            let p_j = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, j_vtx);
+            let q_j = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, j_vtx);
+            let rm = r_i.add(r_j).scale(0.5);
+            let r = q_i.sub(q_j).sub(&rm.mult_vec(&p_i.sub(p_j)));
             let r = r.scale(w);
-            vtx2res[i_vtx * 3 + 0] += r.x;
-            vtx2res[i_vtx * 3 + 1] += r.y;
-            vtx2res[i_vtx * 3 + 2] += r.z;
+            vtx2res[i_vtx * 3 + 0] += r[0];
+            vtx2res[i_vtx * 3 + 1] += r[1];
+            vtx2res[i_vtx * 3 + 2] += r[2];
         }
     }
 }

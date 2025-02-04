@@ -7,13 +7,13 @@ pub fn optimal_rotation_for_arap_spoke<T>(
     vtx2xyz_def: &[T],
     adj2weight: &[T],
     weight_scale: T,
-) -> nalgebra::Matrix3<T>
+) -> [T; 9]
 where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    T: num_traits::Float + num_traits::FloatConst + std::fmt::Debug,
 {
     let p0 = arrayref::array_ref!(vtx2xyz_ini, i_vtx * 3, 3);
     let p1 = arrayref::array_ref!(vtx2xyz_def, i_vtx * 3, 3);
-    let mut a = nalgebra::Matrix3::<T>::zeros();
+    let mut a = [T::zero(); 9];
     for idx in 0..adj2vtx.len() {
         let j_vtx = adj2vtx[idx];
         let q0 = arrayref::array_ref!(vtx2xyz_ini, j_vtx * 3, 3);
@@ -21,6 +21,8 @@ where
         let pq0 = del_geo_core::vec3::sub(q0, p0);
         let pq1 = del_geo_core::vec3::sub(q1, p1);
         let w = adj2weight[idx] * weight_scale;
+        del_geo_core::mat3_col_major::add_in_place_scaled_outer_product(&mut a, w, &pq1, &pq0);
+        /*
         a.m11 += w * pq1[0] * pq0[0];
         a.m12 += w * pq1[0] * pq0[1];
         a.m13 += w * pq1[0] * pq0[2];
@@ -30,8 +32,9 @@ where
         a.m31 += w * pq1[2] * pq0[0];
         a.m32 += w * pq1[2] * pq0[1];
         a.m33 += w * pq1[2] * pq0[2];
+         */
     }
-    del_geo_nalgebra::mat3::rotational_component(&a)
+    del_geo_core::mat3_col_major::rotational_component(&a)
 }
 
 pub fn values_of_sparse_matrix_laplacian(
@@ -58,6 +61,8 @@ pub fn values_of_sparse_matrix_laplacian(
 
 #[test]
 fn test_optimal_rotation_for_arap() {
+    use del_geo_core::mat3_col_major::Mat3ColMajor;
+    use del_geo_core::mat4_col_major::Mat4ColMajor;
     let (tri2vtx, vtx2xyz_ini) = del_msh_core::trimesh3_primitive::capsule_yup(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
     let (row2idx, idx2col) =
@@ -70,21 +75,15 @@ fn test_optimal_rotation_for_arap() {
     );
     let mut vtx2xyz_def = vtx2xyz_ini.clone();
     let r0 = {
-        let a_mat =
-            nalgebra::Matrix4::<f64>::new_rotation(nalgebra::Vector3::<f64>::new(1., 2., 3.));
+        let a_mat = del_geo_core::mat4_col_major::from_bryant_angles(1., 1., 3.);
         for i_vtx in 0..vtx2xyz_def.len() / 3 {
-            let p0 = nalgebra::Vector3::<f64>::new(
-                vtx2xyz_ini[i_vtx * 3 + 0],
-                vtx2xyz_ini[i_vtx * 3 + 1],
-                vtx2xyz_ini[i_vtx * 3 + 2],
-            );
-            let p1 = a_mat.transform_vector(&p0);
-            vtx2xyz_def[i_vtx * 3 + 0] = p1.x;
-            vtx2xyz_def[i_vtx * 3 + 1] = p1.y;
-            vtx2xyz_def[i_vtx * 3 + 2] = p1.z;
+            let p0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i_vtx);
+            let p1 = a_mat.transform_homogeneous(&p0).unwrap();
+            vtx2xyz_def[i_vtx * 3 + 0] = p1[0];
+            vtx2xyz_def[i_vtx * 3 + 1] = p1[1];
+            vtx2xyz_def[i_vtx * 3 + 2] = p1[2];
         }
-        let r0: nalgebra::Matrix3<f64> = a_mat.fixed_view::<3, 3>(0, 0).into();
-        r0
+        del_geo_core::mat4_col_major::to_mat3_col_major_xyz(&a_mat)
     };
     for i_vtx in 0..vtx2xyz_ini.len() / 3 {
         let r = optimal_rotation_for_arap_spoke(
@@ -95,8 +94,9 @@ fn test_optimal_rotation_for_arap() {
             &idx2val[row2idx[i_vtx]..row2idx[i_vtx + 1]],
             -1.,
         );
+        dbg!(r.determinant());
         assert!((r.determinant() - 1.0).abs() < 1.0e-5);
-        assert!((r - r0).norm() < 1.0e-5);
+        assert!(r.sub(&r0).norm() < 1.0e-5);
     }
 }
 
@@ -107,11 +107,12 @@ fn energy_par_vtx_arap_spoke<T>(
     vtx2xyz_def: &[T],
     adj2weight: &[T],
     weight_scale: T,
-    rot_mat: &nalgebra::Matrix3<T>,
+    rot_mat: &[T; 9],
 ) -> T
 where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    T: num_traits::Float + Copy + std::ops::AddAssign,
 {
+    use del_geo_core::vec3::Vec3;
     let p0 = arrayref::array_ref!(vtx2xyz_ini, i_vtx * 3, 3);
     let p1 = arrayref::array_ref!(vtx2xyz_def, i_vtx * 3, 3);
     let mut w = T::zero();
@@ -121,9 +122,8 @@ where
         let q1 = arrayref::array_ref!(vtx2xyz_def, j_vtx * 3, 3);
         let pq0 = del_geo_core::vec3::sub(q0, p0);
         let pq1 = del_geo_core::vec3::sub(q1, p1);
-        let pq0 = rot_mat * nalgebra::Vector3::<T>::from(pq0);
-        let pq1 = nalgebra::Vector3::<T>::from(pq1);
-        let diff = (pq1 - pq0).norm_squared();
+        let pq0 = del_geo_core::mat3_col_major::mult_vec(rot_mat, &pq0);
+        let diff = pq1.sub(&pq0).squared_norm();
         w += adj2weight[idx] * weight_scale * diff;
     }
     w
@@ -139,13 +139,13 @@ pub fn energy_arap_spoke<T>(
     vtx2rot: &[T],
 ) -> T
 where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign,
+    T: num_traits::Float + Copy + std::ops::AddAssign,
 {
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);
     let mut tot_w = T::zero();
     for i_vtx in 0..num_vtx {
-        let r0 = nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i_vtx * 9..i_vtx * 9 + 9]);
+        let r0 = arrayref::array_ref![&vtx2rot, i_vtx * 9, 9];
         let i_w = energy_par_vtx_arap_spoke(
             i_vtx,
             &idx2col[row2idx[i_vtx]..row2idx[i_vtx + 1]],
@@ -162,6 +162,8 @@ where
 
 #[test]
 fn test_energy_arap_spoke() {
+    use del_geo_core::mat3_col_major::Mat3ColMajor;
+    use del_geo_core::vec3::Vec3;
     let (tri2vtx, vtx2xyz_ini) =
         del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
@@ -188,12 +190,13 @@ fn test_energy_arap_spoke() {
         }
         vtx2xyz_def
     };
-    let _ = del_msh_core::io_obj::save_tri2vtx_vtx2xyz(
-        "target/hoge.obj",
+    del_msh_core::io_obj::save_tri2vtx_vtx2xyz(
+        "../target/hoge.obj",
         tri2vtx.as_slice(),
         vtx2xyz_def.as_slice(),
         3,
-    );
+    )
+    .unwrap();
     for i_vtx in 0..num_vtx {
         let r0 = optimal_rotation_for_arap_spoke(
             i_vtx,
@@ -216,7 +219,9 @@ fn test_energy_arap_spoke() {
         for i in 0..3 {
             let mut rot = [0f64; 3];
             rot[i] = eps;
-            let r1 = r0 * nalgebra::Rotation3::from_euler_angles(rot[0], rot[1], rot[2]);
+            let r1 = r0.mult_mat_col_major(&del_geo_core::mat3_col_major::from_bryant_angles(
+                rot[0], rot[1], rot[2],
+            ));
             let e1 = energy_par_vtx_arap_spoke(
                 i_vtx,
                 &idx2vtx[vtx2idx[i_vtx]..vtx2idx[i_vtx + 1]],
@@ -260,19 +265,21 @@ fn test_energy_arap_spoke() {
     let eps = 1.0e-5;
     for i_vtx in 0..num_vtx {
         let res = {
-            let mut res = nalgebra::Vector3::<f64>::zeros();
-            let p0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini.as_slice(), i_vtx);
-            let p1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def.as_slice(), i_vtx);
-            let r_i = nalgebra::Matrix3::<f64>::from_row_slice(&vtx2rot[i_vtx * 9..i_vtx * 9 + 9]);
+            let mut res = [0f64; 3];
+            let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), i_vtx);
+            let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), i_vtx);
+            let r_i = arrayref::array_ref![&vtx2rot, i_vtx * 9, 9];
             for jdx in vtx2idx[i_vtx]..vtx2idx[i_vtx + 1] {
                 let j_vtx = idx2vtx[jdx];
-                let q0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini.as_slice(), j_vtx);
-                let q1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def.as_slice(), j_vtx);
-                let r_j =
-                    nalgebra::Matrix3::<f64>::from_row_slice(&vtx2rot[j_vtx * 9..j_vtx * 9 + 9]);
+                let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), j_vtx);
+                let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), j_vtx);
+                let r_j = arrayref::array_ref![&vtx2rot, j_vtx * 9, 9];
                 let weight = -idx2val[jdx];
-                let diff = ((q1 - p1) - (r_i + r_j).scale(0.5) * (q0 - p0)).scale(-4. * weight);
-                res += diff;
+                let rm = r_i.add(&r_j).scale(0.5);
+                let d1 = q1.sub(p1);
+                let d0 = q0.sub(p0);
+                let diff = d1.sub(&rm.mult_vec(&d0)).scale(-4. * weight);
+                res.add_in_place(&diff);
             }
             res
         };
@@ -304,9 +311,10 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     vtx2xyz_ini: &[T],
     vtx2xyz_def: &[T],
 ) where
-    T: num_traits::Float + 'static + nalgebra::RealField + Copy,
+    T: num_traits::Float + num_traits::FloatConst + 'static + Copy + std::fmt::Debug,
     f64: AsPrimitive<T>,
 {
+    use del_geo_core::vec3::Vec3;
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);
     vtx2rot.fill(T::zero());
@@ -317,102 +325,117 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
             &vtx2xyz_ini[i1 * 3..i1 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i2 * 3..i2 * 3 + 3].try_into().unwrap(),
         );
-        let p0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i2);
+        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         // nalgebra matrix for R^T to make 'vtx2rot' row-major order
-        let rt = (p1 - p2) * (q1 - q2).transpose().scale(cots[0])
-            + (p2 - p0) * (q2 - q0).transpose().scale(cots[1])
-            + (p0 - p1) * (q0 - q1).transpose().scale(cots[2]);
+        let rt = del_geo_core::mat3_col_major::add_three(
+            &del_geo_core::mat3_col_major::from_scaled_outer_product(
+                cots[0],
+                &p1.sub(p2),
+                &q1.sub(q2),
+            ),
+            &del_geo_core::mat3_col_major::from_scaled_outer_product(
+                cots[1],
+                &p2.sub(p0),
+                &q2.sub(q0),
+            ),
+            &del_geo_core::mat3_col_major::from_scaled_outer_product(
+                cots[2],
+                &p0.sub(p1),
+                &q0.sub(q1),
+            ),
+        );
         vtx2rot[i0 * 9..i0 * 9 + 9]
             .iter_mut()
             .zip(rt.iter())
-            .for_each(|(v, &w)| *v += w);
+            .for_each(|(v, &w)| *v = *v + w);
         vtx2rot[i1 * 9..i1 * 9 + 9]
             .iter_mut()
             .zip(rt.iter())
-            .for_each(|(v, &w)| *v += w);
+            .for_each(|(v, &w)| *v = *v + w);
         vtx2rot[i2 * 9..i2 * 9 + 9]
             .iter_mut()
             .zip(rt.iter())
-            .for_each(|(v, &w)| *v += w);
+            .for_each(|(v, &w)| *v = *v + w);
     }
     for i_vtx in 0..num_vtx {
-        let rt = nalgebra::Matrix3::<T>::from_column_slice(&vtx2rot[i_vtx * 9..i_vtx * 9 + 9]);
-        let rt = del_geo_nalgebra::mat3::rotational_component(&rt);
+        let rt = arrayref::array_ref![&vtx2rot, i_vtx * 9, 9];
+        let rt = del_geo_core::mat3_col_major::rotational_component(&rt);
         vtx2rot[i_vtx * 9..i_vtx * 9 + 9]
             .iter_mut()
             .zip(rt.iter())
-            .for_each(|(v, &w)| *v += w);
+            .for_each(|(v, &w)| *v = *v + w);
     }
 }
 
 struct CornerVertices<'a, T> {
-    p0: &'a nalgebra::Vector3<T>,
-    p1: &'a nalgebra::Vector3<T>,
-    p2: &'a nalgebra::Vector3<T>,
+    p0: &'a [T; 3],
+    p1: &'a [T; 3],
+    p2: &'a [T; 3],
 }
 
 fn wdw_arap_spoke_rim<T>(
     s: CornerVertices<T>,
     e: CornerVertices<T>,
-    rot0: &nalgebra::Matrix3<T>,
-    rot1: &nalgebra::Matrix3<T>,
-    rot2: &nalgebra::Matrix3<T>,
-) -> (T, [nalgebra::Vector3<T>; 3])
+    rot0: &[T; 9],
+    rot1: &[T; 9],
+    rot2: &[T; 9],
+) -> (T, [[T; 3]; 3])
 where
     T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
     f64: AsPrimitive<T>,
 {
-    let cots = del_geo_core::tri3::cot(s.p0.as_ref(), s.p1.as_ref(), s.p2.as_ref());
+    use del_geo_core::mat3_col_major::Mat3ColMajor;
+    use del_geo_core::vec3::Vec3;
+    let cots = del_geo_core::tri3::cot(s.p0, s.p1, s.p2);
     let mut w = T::zero();
     {
         let coeff: T = (0.25f64 / 3.0f64).as_();
-        let d12_0 = (e.p2 - e.p1) - rot0 * (s.p2 - s.p1);
-        let d12_1 = (e.p2 - e.p1) - rot1 * (s.p2 - s.p1);
-        let d12_2 = (e.p2 - e.p1) - rot2 * (s.p2 - s.p1);
-        w += coeff * cots[0] * (d12_0.norm_squared() + d12_2.norm_squared() + d12_1.norm_squared());
+        let d12_0 = e.p2.sub(e.p1).sub(&rot0.mult_vec(&s.p2.sub(s.p1)));
+        let d12_1 = e.p2.sub(e.p1).sub(&rot1.mult_vec(&s.p2.sub(s.p1)));
+        let d12_2 = e.p2.sub(e.p1).sub(&rot2.mult_vec(&s.p2.sub(s.p1)));
+        w += coeff * cots[0] * (d12_0.squared_norm() + d12_2.squared_norm() + d12_1.squared_norm());
         //
-        let d20_0 = (e.p0 - e.p2) - rot0 * (s.p0 - s.p2);
-        let d20_1 = (e.p0 - e.p2) - rot1 * (s.p0 - s.p2);
-        let d20_2 = (e.p0 - e.p2) - rot2 * (s.p0 - s.p2);
-        w += coeff * cots[1] * (d20_0.norm_squared() + d20_1.norm_squared() + d20_2.norm_squared());
+        let d20_0 = e.p0.sub(e.p2).sub(&rot0.mult_vec(&s.p0.sub(s.p2)));
+        let d20_1 = e.p0.sub(e.p2).sub(&rot1.mult_vec(&s.p0.sub(s.p2)));
+        let d20_2 = e.p0.sub(e.p2).sub(&rot2.mult_vec(&s.p0.sub(s.p2)));
+        w += coeff * cots[1] * (d20_0.squared_norm() + d20_1.squared_norm() + d20_2.squared_norm());
         //
-        let d01_0 = (e.p1 - e.p0) - rot0 * (s.p1 - s.p0);
-        let d01_1 = (e.p1 - e.p0) - rot1 * (s.p1 - s.p0);
-        let d01_2 = (e.p1 - e.p0) - rot2 * (s.p1 - s.p0);
-        w += coeff * cots[2] * (d01_0.norm_squared() + d01_1.norm_squared() + d01_2.norm_squared());
+        let d01_0 = e.p1.sub(e.p0).sub(&rot0.mult_vec(&s.p1.sub(s.p0)));
+        let d01_1 = e.p1.sub(e.p0).sub(&rot1.mult_vec(&s.p1.sub(s.p0)));
+        let d01_2 = e.p1.sub(e.p0).sub(&rot2.mult_vec(&s.p1.sub(s.p0)));
+        w += coeff * cots[2] * (d01_0.squared_norm() + d01_1.squared_norm() + d01_2.squared_norm());
     }
-    let mut dw = [nalgebra::Vector3::<T>::zeros(); 3];
+    let mut dw = [[T::zero(); 3]; 3];
     {
-        let rot = (rot0 + rot1 + rot2).scale(T::one() / 3.0.as_());
-        let d12 = (e.p2 - e.p1) - rot * (s.p2 - s.p1);
-        let d20 = (e.p0 - e.p2) - rot * (s.p0 - s.p2);
-        let d01 = (e.p1 - e.p0) - rot * (s.p1 - s.p0);
+        let rot = del_geo_core::mat3_col_major::add_three(&rot0, &rot1, &rot2)
+            .scale(T::one() / 3.0.as_());
+        let d12 = e.p2.sub(e.p1).sub(&rot.mult_vec(&s.p2.sub(s.p1)));
+        let d20 = e.p0.sub(e.p2).sub(&rot.mult_vec(&s.p0.sub(s.p2)));
+        let d01 = e.p1.sub(e.p0).sub(&rot.mult_vec(&s.p1.sub(s.p0)));
         let coeff: T = 0.5f64.as_();
-        dw[0] += d20.scale(coeff * cots[1]) - d01.scale(coeff * cots[2]);
-        dw[1] += d01.scale(coeff * cots[2]) - d12.scale(coeff * cots[0]);
-        dw[2] += d12.scale(coeff * cots[0]) - d20.scale(coeff * cots[1]);
+        dw[0].add_in_place(&d20.scale(coeff * cots[1]).sub(&d01.scale(coeff * cots[2])));
+        dw[1].add_in_place(&d01.scale(coeff * cots[2]).sub(&d12.scale(coeff * cots[0])));
+        dw[2].add_in_place(&d12.scale(coeff * cots[0]).sub(&d20.scale(coeff * cots[1])));
     }
     (w, dw)
 }
 
 #[test]
 fn test_wdw_arap_spoke_rim() {
-    type Vec = nalgebra::Vector3<f64>;
-    type Mat = nalgebra::Matrix3<f64>;
-    let p0 = Vec::new(0., 0., 0.);
-    let p1 = Vec::new(1., 2., 3.);
-    let p2 = Vec::new(2., 1., 1.);
-    let q0 = Vec::new(3., 2., 1.);
-    let q1 = Vec::new(3., 0., 4.);
-    let q2 = Vec::new(5., 2., 0.);
-    let rot0: Mat = nalgebra::Rotation3::from_euler_angles(1., 2., 3.).into();
-    let rot1: Mat = nalgebra::Rotation3::from_euler_angles(2., 3., 1.).into();
-    let rot2: Mat = nalgebra::Rotation3::from_euler_angles(3., 1., 2.).into();
+    let p0 = [0f64, 0., 0.];
+    let p1 = [1., 2., 3.];
+    let p2 = [2., 1., 1.];
+    let q0 = [3., 2., 1.];
+    let q1 = [3., 0., 4.];
+    let q2 = [5., 2., 0.];
+    let rot0 = del_geo_core::mat3_col_major::from_bryant_angles(1., 2., 3.);
+    let rot1 = del_geo_core::mat3_col_major::from_bryant_angles(2., 3., 1.);
+    let rot2 = del_geo_core::mat3_col_major::from_bryant_angles(3., 1., 2.);
     let eps = 1.0e-4;
     let (w0, dw0) = wdw_arap_spoke_rim(
         CornerVertices {
@@ -430,7 +453,7 @@ fn test_wdw_arap_spoke_rim() {
         &rot2,
     );
     for i_dim in 0..3 {
-        let mut q0a: Vec = q0.clone();
+        let mut q0a = q0.clone();
         q0a[i_dim] += eps;
         let (w1_0, _dw1_0) = wdw_arap_spoke_rim(
             CornerVertices {
@@ -449,7 +472,7 @@ fn test_wdw_arap_spoke_rim() {
         );
         assert!(((w1_0 - w0) / eps - dw0[0][i_dim]).abs() < dw0[0][i_dim].abs() * 0.001 + 0.00001);
         //
-        let mut q1a: Vec = q1.clone();
+        let mut q1a = q1.clone();
         q1a[i_dim] += eps;
         let (w1_1, _dw1_1) = wdw_arap_spoke_rim(
             CornerVertices {
@@ -468,7 +491,7 @@ fn test_wdw_arap_spoke_rim() {
         );
         assert!(((w1_1 - w0) / eps - dw0[1][i_dim]).abs() < dw0[1][i_dim].abs() * 0.001 + 0.00001);
         //
-        let mut q2a: Vec = q2.clone();
+        let mut q2a = q2.clone();
         q2a[i_dim] += eps;
         let (w1_2, _dw1_2) = wdw_arap_spoke_rim(
             CornerVertices {
@@ -504,12 +527,12 @@ where
     let mut tot_w = T::zero();
     for node2vtx in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let p0 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_ini[i0 * 3..i0 * 3 + 3]);
-        let p1 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_ini[i1 * 3..i1 * 3 + 3]);
-        let p2 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_ini[i2 * 3..i2 * 3 + 3]);
-        let q0 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_def[i0 * 3..i0 * 3 + 3]);
-        let q1 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_def[i1 * 3..i1 * 3 + 3]);
-        let q2 = nalgebra::Vector3::<T>::from_row_slice(&vtx2xyz_def[i2 * 3..i2 * 3 + 3]);
+        let p0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i0);
+        let p1 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i1);
+        let p2 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i2);
+        let q0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i0);
+        let q1 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i1);
+        let q2 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i2);
         let (w, _) = wdw_arap_spoke_rim(
             CornerVertices {
                 p0: &p0,
@@ -521,9 +544,9 @@ where
                 p1: &q1,
                 p2: &q2,
             },
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i0 * 9..i0 * 9 + 9]),
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i1 * 9..i1 * 9 + 9]),
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i2 * 9..i2 * 9 + 9]),
+            arrayref::array_ref![&vtx2rot, i0 * 9, 9],
+            arrayref::array_ref![&vtx2rot, i1 * 9, 9],
+            arrayref::array_ref![&vtx2rot, i2 * 9, 9],
         );
         tot_w += w;
     }
@@ -581,12 +604,12 @@ pub fn residual_arap_spoke_rim<T>(
     vtx2res.fill(T::zero());
     for nodes in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (nodes[0], nodes[1], nodes[2]);
-        let p0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_navec3(vtx2xyz_def, i2);
+        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (_, dw) = wdw_arap_spoke_rim(
             CornerVertices {
                 p0: &p0,
@@ -598,9 +621,9 @@ pub fn residual_arap_spoke_rim<T>(
                 p1: &q1,
                 p2: &q2,
             },
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i0 * 9..i0 * 9 + 9]),
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i1 * 9..i1 * 9 + 9]),
-            &nalgebra::Matrix3::<T>::from_row_slice(&vtx2rot[i2 * 9..i2 * 9 + 9]),
+            arrayref::array_ref![&vtx2rot, i0 * 9, 9],
+            arrayref::array_ref![&vtx2rot, i1 * 9, 9],
+            arrayref::array_ref![&vtx2rot, i2 * 9, 9],
         );
         vtx2res[i0 * 3..i0 * 3 + 3]
             .iter_mut()

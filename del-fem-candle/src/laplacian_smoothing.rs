@@ -13,24 +13,23 @@ fn compute_residual_norm(
     let num_vtx = vtx2trgs.len() / 3;
     let func_res = |i_vtx: usize| -> f32 {
         let mut res = [
-            vtx2trgs[i_vtx * 3 + 0],
+            vtx2trgs[i_vtx * 3],
             vtx2trgs[i_vtx * 3 + 1],
             vtx2trgs[i_vtx * 3 + 2],
         ];
         for &j_vtx in &idx2vtx[vtx2idx[i_vtx] as usize..vtx2idx[i_vtx + 1] as usize] {
             let j_vtx = j_vtx as usize;
-            res[0] += lambda * vtx2vars[j_vtx * 3 + 0];
+            res[0] += lambda * vtx2vars[j_vtx * 3];
             res[1] += lambda * vtx2vars[j_vtx * 3 + 1];
             res[2] += lambda * vtx2vars[j_vtx * 3 + 2];
         }
         let valence = (vtx2idx[i_vtx + 1] - vtx2idx[i_vtx]) as f32;
-        res[0] -= (1f32 + lambda * valence) * vtx2vars[i_vtx * 3 + 0];
+        res[0] -= (1f32 + lambda * valence) * vtx2vars[i_vtx * 3];
         res[1] -= (1f32 + lambda * valence) * vtx2vars[i_vtx * 3 + 1];
         res[2] -= (1f32 + lambda * valence) * vtx2vars[i_vtx * 3 + 2];
         res[0] * res[0] + res[1] * res[1] + res[2] * res[2]
     };
-    let res = (0..num_vtx).into_iter().map(|i_vtx| func_res(i_vtx)).sum();
-    res
+    (0..num_vtx).map(func_res).sum()
 }
 
 /// minimizer for f(`vtx2vals`) = || `vtx2vals` - `vtx2trgs`||^2 + `lambda` * tr(`vtx2vals`^T * L *`vtx2vals`)
@@ -63,13 +62,13 @@ impl CustomOp1 for LaplacianSmoothing {
         get_cpu_slice_and_storage_from_tensor!(idx2vtx, storage_idx2vtx, self.idx2vtx, u32);
         let func_upd = |i_vtx: usize, lhs_next: &mut [f32], vtx2lhs_prev: &[f32]| {
             let mut rhs = [
-                vtx2trgs[i_vtx * 3 + 0],
+                vtx2trgs[i_vtx * 3],
                 vtx2trgs[i_vtx * 3 + 1],
                 vtx2trgs[i_vtx * 3 + 2],
             ];
             for &j_vtx in &idx2vtx[vtx2idx[i_vtx] as usize..vtx2idx[i_vtx + 1] as usize] {
                 let j_vtx = j_vtx as usize;
-                rhs[0] += self.lambda * vtx2lhs_prev[j_vtx * 3 + 0];
+                rhs[0] += self.lambda * vtx2lhs_prev[j_vtx * 3];
                 rhs[1] += self.lambda * vtx2lhs_prev[j_vtx * 3 + 1];
                 rhs[2] += self.lambda * vtx2lhs_prev[j_vtx * 3 + 2];
             }
@@ -158,6 +157,7 @@ impl CustomOp1 for LaplacianSmoothing {
 }
 
 #[test]
+#[allow(unused_variables)]
 fn test_laplacian_smoothing() -> candle_core::Result<()> {
     let (tri2vtx, vtx2xyz) = del_msh_core::trimesh3_primitive::sphere_yup(1f32, 512, 512);
     let num_vtx = vtx2xyz.len() / 3;

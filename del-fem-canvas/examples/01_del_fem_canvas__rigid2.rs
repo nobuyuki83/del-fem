@@ -106,7 +106,7 @@ pA,pB,tangent_dir,velo_slip,c.lambda/dt);
 
 fn main() -> anyhow::Result<()> {
     use del_fem_core::pbd_rigidbody2::RigidBody;
-    let mut rb0 = RigidBody {
+    let rb0 = RigidBody {
         vtx2xy: vec![
             -1.0, 0.0, 1.0, 0.0, 1.0, 0.8, 0.9, 0.8, 0.9, 0.2, -0.9, 0.2, -0.9, 0.8, -1.0, 0.8,
         ],
@@ -121,7 +121,7 @@ fn main() -> anyhow::Result<()> {
         mass: 0f32,
         moment_of_inertia: 0f32,
     };
-    let mut rb1 = RigidBody {
+    let rb1 = RigidBody {
         vtx2xy: vec![0.0, 0.0, 0.4, 0.0, 0.4, 0.2, 0.0, 0.2],
         pos_cg_ref: [0f32; 2],
         pos_cg_def: [0f32, 0.5f32],
@@ -160,7 +160,7 @@ fn main() -> anyhow::Result<()> {
         del_geo_core::mat3_col_major::mult_mat_col_major(&t1, &t0)
     };
 
-    for itr in 0..200 {
+    for _itr in 0..200 {
         step_time(&mut rbs, 0.01, &[0.0, -10.0]);
         canvas.clear(0);
         for rb in rbs.iter() {
