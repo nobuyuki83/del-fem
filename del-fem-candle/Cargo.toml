@@ -30,12 +30,12 @@ rayon.workspace = true
 # del-msh-candle = { path = "../../del-msh/del-msh-candle" }
 
 # for push
-# candle-core = { git = "https://github.com/huggingface/candle.git" }
-# del-fem-cudarc.workspace = true
+candle-core = { git = "https://github.com/huggingface/candle.git" }
+del-fem-cudarc.workspace = true
 
 # for deploy
-candle-core = "=0.8.2"
-del-fem-cudarc = "=0.1.4"
+# candle-core = "=0.8.2"
+# del-fem-cudarc = "=0.1.4"
 
 
 [dev-dependencies]
