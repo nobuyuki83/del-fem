@@ -46,7 +46,7 @@ where
     }
 
     pub fn initialize(&mut self, colind: &Vec<usize>, rowptr: &Vec<usize>) {
-        self.sparse.symbolic_initialization(&colind, &rowptr);
+        self.sparse.symbolic_initialization(colind, rowptr);
         //self.ilu.initialize(&self.sparse);
         let nblk = colind.len() - 1;
         self.r_vec.resize(nblk, T::zero());

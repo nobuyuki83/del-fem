@@ -107,7 +107,7 @@ pub fn attach(
 ) -> f32 {
     use del_geo_core::vec2;
     let p_a =
-        del_geo_core::mat3_col_major::transform_homogeneous(&rb_a.local2world(), &pos_a_attach)
+        del_geo_core::mat3_col_major::transform_homogeneous(&rb_a.local2world(), pos_a_attach)
             .unwrap();
 
     let penetration = del_geo_core::edge2::length(&p_a, p_b);

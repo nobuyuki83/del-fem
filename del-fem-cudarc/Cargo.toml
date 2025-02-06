@@ -11,12 +11,13 @@ cuda = ["dep:del-fem-cudarc-kernel"]
 [dependencies]
 anyhow.workspace = true
 del-msh-core.workspace = true
+del-cudarc.workspace = true
 
 # for push/develop
-# del-fem-cudarc-kernel = {workspace = true, optional = true}
+del-fem-cudarc-kernel = {workspace = true, optional = true}
 
 # for deploy
-del-fem-cudarc-kernel = {  version = "0.1.0", optional = true }
+# del-fem-cudarc-kernel = {  version = "0.1.0", optional = true }
 
 
 

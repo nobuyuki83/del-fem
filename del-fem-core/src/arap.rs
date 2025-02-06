@@ -153,7 +153,7 @@ where
             vtx2xyz_def,
             &idx2val[row2idx[i_vtx]..row2idx[i_vtx + 1]],
             weight_scale,
-            &r0,
+            r0,
         );
         tot_w += i_w;
     }
@@ -412,8 +412,8 @@ where
     }
     let mut dw = [[T::zero(); 3]; 3];
     {
-        let rot = del_geo_core::mat3_col_major::add_three(&rot0, &rot1, &rot2)
-            .scale(T::one() / 3.0.as_());
+        let rot =
+            del_geo_core::mat3_col_major::add_three(rot0, rot1, rot2).scale(T::one() / 3.0.as_());
         let d12 = e.p2.sub(e.p1).sub(&rot.mult_vec(&s.p2.sub(s.p1)));
         let d20 = e.p0.sub(e.p2).sub(&rot.mult_vec(&s.p0.sub(s.p2)));
         let d01 = e.p1.sub(e.p0).sub(&rot.mult_vec(&s.p1.sub(s.p0)));
@@ -527,22 +527,18 @@ where
     let mut tot_w = T::zero();
     for node2vtx in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let p0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_def, i2);
+        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (w, _) = wdw_arap_spoke_rim(
+            CornerVertices { p0, p1, p2 },
             CornerVertices {
-                p0: &p0,
-                p1: &p1,
-                p2: &p2,
-            },
-            CornerVertices {
-                p0: &q0,
-                p1: &q1,
-                p2: &q2,
+                p0: q0,
+                p1: q1,
+                p2: q2,
             },
             arrayref::array_ref![&vtx2rot, i0 * 9, 9],
             arrayref::array_ref![&vtx2rot, i1 * 9, 9],
@@ -612,14 +608,14 @@ pub fn residual_arap_spoke_rim<T>(
         let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (_, dw) = wdw_arap_spoke_rim(
             CornerVertices {
-                p0: &p0,
-                p1: &p1,
-                p2: &p2,
+                p0,
+                p1,
+                p2,
             },
             CornerVertices {
-                p0: &q0,
-                p1: &q1,
-                p2: &q2,
+                p0: q0,
+                p1: q1,
+                p2: q2,
             },
             arrayref::array_ref![&vtx2rot, i0 * 9, 9],
             arrayref::array_ref![&vtx2rot, i1 * 9, 9],

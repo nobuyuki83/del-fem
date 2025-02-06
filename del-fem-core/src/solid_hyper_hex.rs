@@ -1,6 +1,5 @@
 pub const ISTDIM2IJ: [[usize; 2]; 6] = [[0, 0], [1, 1], [2, 2], [0, 1], [1, 2], [2, 0]];
 
-///!
 /// compute energy density and its gradient & hessian w.r.t. right Cauchy-Green tensor given the displacement gradient tensor
 /// * c1
 /// * c2

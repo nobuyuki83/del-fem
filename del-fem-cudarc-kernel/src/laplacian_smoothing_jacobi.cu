@@ -1,3 +1,4 @@
+#include <cstdint> // for uint32_t
 #include <stdio.h>
 #include <cuda_runtime.h>
 

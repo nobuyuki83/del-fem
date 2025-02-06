@@ -95,8 +95,8 @@ fn example2() -> anyhow::Result<()> {
         let num_pnt = num_edge + 1;
         let mut pnt2xy = Vec::<f32>::with_capacity(num_pnt * 2);
         for _i_pnt in 0..num_pnt {
-            let x = reng.gen::<f32>();
-            let y = reng.gen::<f32>();
+            let x = reng.random::<f32>();
+            let y = reng.random::<f32>();
             pnt2xy.push(x);
             pnt2xy.push(y);
         }
@@ -212,8 +212,8 @@ fn example3() -> anyhow::Result<()> {
         let num_pnt = num_edge + 1;
         let mut pnt2xy = Vec::<f32>::with_capacity(num_pnt * 2);
         for i_pnt in 0..num_pnt {
-            let x = 0.0 + 0.001 * reng.gen::<f32>();
-            let y = -0.8 + 0.05 * (i_pnt as f32) + 0.001 * reng.gen::<f32>();
+            let x = 0.0 + 0.001 * reng.random::<f32>();
+            let y = -0.8 + 0.05 * (i_pnt as f32) + 0.001 * reng.random::<f32>();
             pnt2xy.push(x);
             pnt2xy.push(y);
         }

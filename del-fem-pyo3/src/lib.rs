@@ -175,6 +175,7 @@ fn merge_linear_solid_to_bsr_for_meshtri2<'a>(
 #[pyo3(name = "del_fem")]
 fn del_fem_(_py: pyo3::Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> pyo3::PyResult<()> {
     mesh_laplacian::add_functions(_py, m)?;
+    use pyo3::types::PyModuleMethods;
     m.add_function(pyo3::wrap_pyfunction!(mitc3_mass_for_trimesh2, m)?)?;
     m.add_function(pyo3::wrap_pyfunction!(merge_mitc3_to_bsr_for_meshtri2, m)?)?;
     m.add_function(pyo3::wrap_pyfunction!(

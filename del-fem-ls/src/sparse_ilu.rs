@@ -225,7 +225,7 @@ where
 }
 
 fn symbolic_iluk(
-    a_row2idx: &Vec<usize>,
+    a_row2idx: &[usize],
     mut a_idx2col: Vec<usize>,
     lev_fill: usize,
 ) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
@@ -238,8 +238,7 @@ fn symbolic_iluk(
     let mut row2idx = vec![0_usize; num_row + 1];
     let mut row2idx_dia = vec![0; num_row];
 
-    let mut idx2collev = Vec::<[usize; 2]>::new();
-    idx2collev.reserve(a_idx2col.len() * 4);
+    let mut idx2collev = Vec::<[usize; 2]>::with_capacity(a_idx2col.len() * 4);
 
     for i_row in 0..num_row {
         let mut col2lev = std::collections::BTreeMap::<usize, usize>::new();

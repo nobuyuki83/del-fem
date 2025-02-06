@@ -41,10 +41,10 @@ where
     }
 
     /// set non-zero pattern
-    pub fn symbolic_initialization(&mut self, row2idx: &Vec<usize>, idx2col: &Vec<usize>) {
+    pub fn symbolic_initialization(&mut self, row2idx: &[usize], idx2col: &[usize]) {
         self.num_blk = row2idx.len() - 1;
-        self.row2idx = row2idx.clone();
-        self.idx2col = idx2col.clone();
+        self.row2idx = row2idx.to_vec();
+        self.idx2col = idx2col.to_vec();
         let num_idx = self.row2idx[self.num_blk];
         assert_eq!(num_idx, idx2col.len());
         self.idx2val.resize_with(num_idx, Default::default);
