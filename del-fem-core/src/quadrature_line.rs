@@ -39,7 +39,6 @@ pub const IDX2POSWEIGHT_F32: [[f32; 2]; 28] = [
     [9.49107912342758525e-01, 1.29484966168869693e-01],
 ];
 
-
 #[allow(clippy::excessive_precision)]
 pub const IDX2POSWEIGHT_F64: [[f64; 2]; 28] = [
     // 1 point

@@ -607,11 +607,7 @@ pub fn residual_arap_spoke_rim<T>(
         let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
         let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (_, dw) = wdw_arap_spoke_rim(
-            CornerVertices {
-                p0,
-                p1,
-                p2,
-            },
+            CornerVertices { p0, p1, p2 },
             CornerVertices {
                 p0: q0,
                 p1: q1,

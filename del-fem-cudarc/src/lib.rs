@@ -2,7 +2,7 @@
 pub mod laplacian_smoothing_jacobi;
 
 #[cfg(feature = "cuda")]
-use del_cudarc::cudarc as cudarc;
+use del_cudarc::cudarc;
 
 #[cfg(feature = "cuda")]
 pub fn get_or_load_func(

@@ -1,5 +1,5 @@
-use del_cudarc::cudarc as cudarc;
 use cudarc::driver::{CudaDevice, CudaSlice, CudaViewMut, DeviceSlice};
+use del_cudarc::cudarc;
 
 pub fn solve(
     dev: &std::sync::Arc<CudaDevice>,

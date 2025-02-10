@@ -98,6 +98,9 @@ pub fn resolve_contact(
     lambda
 }
 
+/// applying PBD attachment constraint
+/// # Return (lambda: f32)
+/// - lambda
 pub fn attach(
     rb_a: &mut RigidBody,
     pos_a_attach: &[f32; 2],

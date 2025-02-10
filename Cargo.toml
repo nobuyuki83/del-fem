@@ -35,19 +35,16 @@ del-fem-cudarc-kernel = { path = "del-fem-cudarc-kernel"}
 del-fem-candle = { path = "del-fem-candle" }
 
 # for development
-# del-geo-core = { path = "../del-geo/del-geo-core" }
-# del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-# del-msh-core = { path = "../del-msh/del-msh-core" }
-# del-canvas = { path = "../del-canvas" }
-# del-cudarc = { path = "../del-cudarc" }
-
+del-geo-core = { path = "../del-geo/del-geo-core" }
+del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
+del-msh-core = { path = "../del-msh/del-msh-core" }
+del-canvas = { path = "../del-canvas" }
 
 # for github push
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
-del-cudarc = { git = "https://github.com/nobuyuki83/del-cudarc" }
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
 
 
 # for crate publish

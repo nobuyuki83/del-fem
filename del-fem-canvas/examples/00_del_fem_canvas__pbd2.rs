@@ -198,7 +198,9 @@ fn example2() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// the positions are constraint inside a circle
 fn example3() -> anyhow::Result<()> {
+    use del_geo_core::vec2::Vec2;
     // constant value during simulation
     let dt = 0.005;
     let num_edge = 10;
@@ -221,12 +223,13 @@ fn example3() -> anyhow::Result<()> {
         pnt2xy[1] = -0.75;
         pnt2xy
     };
+    // inverse mass
     let pnt2massinv = {
         let mut pnt2massinv = vec![1f32; pnt2xy_def.len() / 2];
-        pnt2massinv[0] = 0f32;
+        pnt2massinv[0] = 0f32; // fixed condition
         pnt2massinv
     };
-
+    // rigid body attached to the tip
     let mut rb = del_fem_core::pbd_rigidbody2::RigidBody {
         vtx2xy: vec![-0.1, -0.1, 0.1, -0.1, 0.1, 0.1, -0.1, 0.1],
         pos_cg_ref: [0.0, 0.0],
@@ -240,9 +243,10 @@ fn example3() -> anyhow::Result<()> {
         mass: 0f32,
         moment_of_inertia: 0.0,
     };
+    // initializing the rigid body
     {
         let rho = 1000.0;
-        let area = del_msh_core::polyloop2::area_(&rb.vtx2xy);
+        let area = del_msh_core::polyloop2::area(&rb.vtx2xy);
         let cg = del_msh_core::polyloop2::cog_as_face(&rb.vtx2xy);
         let moment = del_msh_core::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
         rb.mass = rho * area;
@@ -250,7 +254,6 @@ fn example3() -> anyhow::Result<()> {
         rb.pos_cg_ref = cg;
     }
     let pos_attach = [-0.0, -0.13];
-
     // visualization related stuff
     let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__3.gif"),
@@ -259,7 +262,6 @@ fn example3() -> anyhow::Result<()> {
     )?;
     let transform_world2pix: [f32; 9] =
         del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
-
     let mut pnt2xy_new = pnt2xy_def.clone();
     let mut pnt2velo = vec![0f32; pnt2xy_def.len()];
     for i_step in 0..1000 {
@@ -282,10 +284,8 @@ fn example3() -> anyhow::Result<()> {
                 pnt2massinv[ip0],
                 pnt2massinv[ip1],
             );
-            pnt2xy_new[ip0 * 2 + 0] += dp0[0];
-            pnt2xy_new[ip0 * 2 + 1] += dp0[1];
-            pnt2xy_new[ip1 * 2 + 0] += dp1[0];
-            pnt2xy_new[ip1 * 2 + 1] += dp1[1];
+            arrayref::array_mut_ref![pnt2xy_new, ip0 * 2, 2].add_in_place(&dp0);
+            arrayref::array_mut_ref![pnt2xy_new, ip1 * 2, 2].add_in_place(&dp1);
         }
         // angle constraint
         for i_seg in 0..num_pnt - 2 {
@@ -301,13 +301,11 @@ fn example3() -> anyhow::Result<()> {
             );
             //
             let damp = 0.7;
-            pnt2xy_new[ip0 * 2 + 0] += damp * dp[0][0];
-            pnt2xy_new[ip0 * 2 + 1] += damp * dp[0][1];
-            pnt2xy_new[ip1 * 2 + 0] += damp * dp[1][0];
-            pnt2xy_new[ip1 * 2 + 1] += damp * dp[1][1];
-            pnt2xy_new[ip2 * 2 + 0] += damp * dp[2][0];
-            pnt2xy_new[ip2 * 2 + 1] += damp * dp[2][1];
+            arrayref::array_mut_ref![pnt2xy_new, ip0 * 2, 2].add_in_place(&dp[0].scale(damp));
+            arrayref::array_mut_ref![pnt2xy_new, ip1 * 2, 2].add_in_place(&dp[1].scale(damp));
+            arrayref::array_mut_ref![pnt2xy_new, ip2 * 2, 2].add_in_place(&dp[2].scale(damp));
         }
+        // rigid body attach constraint
         {
             let i_pnt = pnt2xy_new.len() / 2 - 1;
             let p0 = arrayref::array_mut_ref!(pnt2xy_new, i_pnt * 2, 2);
@@ -320,8 +318,8 @@ fn example3() -> anyhow::Result<()> {
                 damp,
             );
         }
+        // collision against circle boundary
         for i_pnt in 0..pnt2xy_new.len() / 2 {
-            // collision
             let x = pnt2xy_new[i_pnt * 2 + 0];
             let y = pnt2xy_new[i_pnt * 2 + 1];
             let r = (x * x + y * y).sqrt();
@@ -331,6 +329,25 @@ fn example3() -> anyhow::Result<()> {
                 let y = y / r * r0;
                 pnt2xy_new[i_pnt * 2 + 0] = x;
                 pnt2xy_new[i_pnt * 2 + 1] = y;
+            }
+        }
+        // collision against rigid body
+        {
+            let transform_local2world = rb.local2world();
+            let transform_world2local =
+                del_geo_core::mat3_col_major::try_inverse(&transform_local2world).unwrap();
+            for i_pnt in 0..pnt2xy_new.len() / 2 {
+                let p_world = arrayref::array_ref![pnt2xy_new, i_pnt * 2, 2];
+                let p_local = del_geo_core::mat3_col_major::transform_homogeneous(
+                    &transform_world2local,
+                    p_world,
+                )
+                .unwrap();
+                let vtx2xy = &rb.vtx2xy;
+                let is_inside = del_msh_core::polyloop2::is_inside(vtx2xy, &p_local);
+                if is_inside {
+                    dbg!("inside {} {}", i_pnt, i_step);
+                }
             }
         }
         // ------------
