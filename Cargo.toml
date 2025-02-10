@@ -40,7 +40,7 @@ del-fem-candle = { path = "del-fem-candle" }
 # del-msh-core = { path = "../del-msh/del-msh-core" }
 # del-canvas = { path = "../del-canvas" }
 
-# for github push
+# for GitHub push
 del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
