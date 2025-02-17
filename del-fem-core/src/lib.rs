@@ -12,6 +12,7 @@ pub mod quadratic_bending;
 mod quadrature_line;
 pub mod rod2;
 pub mod solid_hyper_hex;
+pub mod solid_hyper_svd;
 pub mod solid_incompressive_hex;
 pub mod solid_linear_hex;
 pub mod solid_linear_tri2;

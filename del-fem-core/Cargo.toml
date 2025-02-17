@@ -20,3 +20,8 @@ del-fem-ls = {workspace = true}
 
 # for deploy
 # del-fem-ls = "0.1.5"
+
+[dev-dependencies]
+rand.workspace = true
+rand_chacha.workspace = true
+anyhow.workspace = true
