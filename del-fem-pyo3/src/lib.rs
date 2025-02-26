@@ -6,6 +6,7 @@ use pyo3::Python;
 mod mesh_laplacian;
 
 #[pyo3::pyfunction]
+#[allow(clippy::too_many_arguments)]
 fn merge_mitc3_to_bsr_for_meshtri2<'a>(
     _py: Python<'a>,
     thick: f32,

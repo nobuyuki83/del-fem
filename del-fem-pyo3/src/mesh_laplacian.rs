@@ -114,7 +114,7 @@ pub fn optimal_rotations_arap_spoke<'a>(
 }
 
 #[pyo3::pyfunction]
-#[allow(clippy::identity_op)]
+#[allow(clippy::too_many_arguments)]
 pub fn residual_arap_spoke<'a>(
     _py: Python<'a>,
     vtx2xyz_ini: PyReadonlyArray2<'a, f64>,
@@ -158,7 +158,7 @@ pub fn residual_arap_spoke<'a>(
             let rm = r_i.add(r_j).scale(0.5);
             let r = q_i.sub(q_j).sub(&rm.mult_vec(&p_i.sub(p_j)));
             let r = r.scale(w);
-            vtx2res[i_vtx * 3 + 0] += r[0];
+            vtx2res[i_vtx * 3] += r[0];
             vtx2res[i_vtx * 3 + 1] += r[1];
             vtx2res[i_vtx * 3 + 2] += r[2];
         }
