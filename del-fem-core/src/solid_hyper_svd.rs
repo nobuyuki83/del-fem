@@ -28,6 +28,203 @@ where
     }
 }
 
+pub struct SymDirichlet {}
+
+impl<Real> EnergyDensityFromSingularValueOfDefGrad<Real> for SymDirichlet
+where
+    Real: num_traits::Float,
+{
+    fn eval(&self, s: &[Real; 3]) -> Real {
+        let one = Real::one();
+        let ss = [s[0] * s[0], s[1] * s[1], s[2] * s[2]];
+        ss[0] + one / ss[0] + ss[1] + one / ss[1] + ss[2] + one / ss[2]
+    }
+
+    fn grad(&self, s: &[Real; 3]) -> [Real; 3] {
+        let one = Real::one();
+        let two = one + one;
+        let sss = [s[0].powi(3), s[1].powi(3), s[2].powi(3)];
+        [
+            two * s[0] - two / sss[0],
+            two * s[1] - two / sss[1],
+            two * s[2] - two / sss[2],
+        ]
+    }
+
+    fn hessian(&self, s: &[Real; 3]) -> [Real; 9] {
+        let zero = Real::zero();
+        let one = Real::one();
+        let two = one + one;
+        let three = two + one;
+        let six = two * three;
+        let ssss = [s[0].powi(4), s[1].powi(4), s[2].powi(4)];
+        [
+            two + six / ssss[0],
+            zero,
+            zero,
+            zero,
+            two + six / ssss[1],
+            zero,
+            zero,
+            zero,
+            two + six / ssss[2],
+        ]
+    }
+}
+
+struct Mips {}
+
+impl<Real> EnergyDensityFromSingularValueOfDefGrad<Real> for Mips
+where
+    Real: num_traits::Float,
+{
+    fn eval(&self, s: &[Real; 3]) -> Real {
+        (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]) / (s[0] * s[1] * s[2])
+    }
+
+    fn grad(&self, s: &[Real; 3]) -> [Real; 3] {
+        let one = Real::one();
+        [
+            one / (s[1] * s[2]) - (s[1] / s[2] + s[2] / s[1]) / s[0].powi(2),
+            one / (s[2] * s[0]) - (s[2] / s[0] + s[0] / s[2]) / s[1].powi(2),
+            one / (s[0] * s[1]) - (s[0] / s[1] + s[1] / s[0]) / s[2].powi(2),
+        ]
+    }
+
+    fn hessian(&self, s: &[Real; 3]) -> [Real; 9] {
+        let one = Real::one();
+        let two = one + one;
+        let ss = [s[0] * s[0], s[1] * s[1], s[2] * s[2]];
+        let t0 = s[0] / (ss[1] * ss[2]) - (one / ss[2] + one / ss[1]) / s[0];
+        let t1 = s[1] / (ss[2] * ss[0]) - (one / ss[0] + one / ss[2]) / s[1];
+        let t2 = s[2] / (ss[0] * ss[1]) - (one / ss[1] + one / ss[0]) / s[2];
+        [
+            (s[1] / s[2] + s[2] / s[1]) * two / s[0].powi(3),
+            t2,
+            t1,
+            t2,
+            (s[2] / s[0] + s[0] / s[2]) * two / s[1].powi(3),
+            t0,
+            t1,
+            t0,
+            (s[0] / s[1] + s[1] / s[0]) * two / s[2].powi(3), // 22
+        ]
+    }
+}
+
+struct Ogden {}
+
+impl<Real> EnergyDensityFromSingularValueOfDefGrad<Real> for Ogden
+where
+    Real: num_traits::Float,
+{
+    fn eval(&self, s: &[Real; 3]) -> Real {
+        let one = Real::one();
+        let two = one + one;
+        let half = one / two;
+        let three = one + two;
+        (0..5)
+            .map(|k| {
+                s[0].powf(half.powi(k)) + s[1].powf(half.powi(k)) + s[2].powf(half.powi(k)) - three
+            })
+            .fold(Real::zero(), |sum, x| sum + x)
+    }
+
+    fn grad(&self, s: &[Real; 3]) -> [Real; 3] {
+        let one = Real::one();
+        let two = one + one;
+        let half = one / two;
+        [
+            (0..5)
+                .map(|i| s[0].powf(half.powi(i) - one) / two.powi(i))
+                .fold(Real::zero(), |sum, x| sum + x),
+            (0..5)
+                .map(|i| s[1].powf(half.powi(i) - one) / two.powi(i))
+                .fold(Real::zero(), |sum, x| sum + x),
+            (0..5)
+                .map(|i| s[2].powf(half.powi(i) - one) / two.powi(i))
+                .fold(Real::zero(), |sum, x| sum + x),
+        ]
+    }
+
+    fn hessian(&self, s: &[Real; 3]) -> [Real; 9] {
+        let zero = Real::zero();
+        let one = Real::one();
+        let two = one + one;
+        let half = one / two;
+        let t0 = (0..5)
+            .map(|i| s[0].powf(half.powi(i) - two) / two.powi(i) * (half.powi(i) - one))
+            .fold(Real::zero(), |sum, x| sum + x);
+        let t1 = (0..5)
+            .map(|i| s[1].powf(half.powi(i) - two) / two.powi(i) * (half.powi(i) - one))
+            .fold(Real::zero(), |sum, x| sum + x);
+        let t2 = (0..5)
+            .map(|i| s[2].powf(half.powi(i) - two) / two.powi(i) * (half.powi(i) - one))
+            .fold(Real::zero(), |sum, x| sum + x);
+        [t0, zero, zero, zero, t1, zero, zero, zero, t2]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rand::Rng;
+
+    fn test_gradient<
+        Model: crate::solid_hyper_svd::EnergyDensityFromSingularValueOfDefGrad<f64>,
+    >(
+        model: Model,
+        s0: &[f64; 3],
+    ) {
+        let w0 = model.eval(&s0);
+        let dw0 = model.grad(&s0);
+        let ddw0 = model.hessian(&s0);
+        let eps = 1.0e-5;
+        for j in 0..3 {
+            let s1 = {
+                let mut s1 = *s0;
+                s1[j] += eps;
+                s1
+            };
+            let w1 = model.eval(&s1);
+            let dw1 = model.grad(&s1);
+            {
+                let dw_ana = dw0[j];
+                let dw_num = (w1 - w0) / eps;
+                assert!(
+                    (dw_ana - dw_num).abs() < 1.0e-3 * (dw_ana.abs() + 1.0),
+                    "{} --> {} {}",
+                    j,
+                    dw_ana,
+                    dw_num
+                );
+            }
+            for i in 0..3 {
+                let dw_ana = ddw0[i + 3 * j];
+                let dw_num = (dw1[i] - dw0[i]) / eps;
+                assert!(
+                    (dw_ana - dw_num).abs() < 1.0e-3 * (dw_ana.abs() + 1.0),
+                    "{} --> {} {}",
+                    j,
+                    dw_ana,
+                    dw_num
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn gradient() {
+        use crate::solid_hyper_svd::{Arap, Mips, Ogden, SymDirichlet};
+        use rand::SeedableRng;
+        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(0);
+        let s0 = [rng.random(), rng.random(), rng.random()];
+        test_gradient(Arap {}, &s0);
+        test_gradient(SymDirichlet {}, &s0);
+        test_gradient(Mips {}, &s0);
+        test_gradient(Ogden {}, &s0);
+    }
+}
+
 pub fn energy_density_gradient_hessian_wrt_def_grad<
     Real,
     Model: EnergyDensityFromSingularValueOfDefGrad<Real>,
