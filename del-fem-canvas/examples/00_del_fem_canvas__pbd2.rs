@@ -1,3 +1,5 @@
+use del_geo_core::vec2;
+
 fn example1() -> anyhow::Result<()> {
     // constant value during simulation
     let gravity = [0., -10.];
@@ -253,7 +255,8 @@ fn example3() -> anyhow::Result<()> {
         rb.moment_of_inertia = rho * moment;
         rb.pos_cg_ref = cg;
     }
-    let pos_attach = [-0.0, -0.13];
+    let pos_attach = [-0.0, -0.15];
+    // let pos_attach = [-0.0, -0.0];
     // visualization related stuff
     let mut canvas = del_canvas::canvas_gif::Canvas::new(
         std::path::Path::new("target/00_del_fem_canvas__pbd2__3.gif"),
@@ -333,6 +336,7 @@ fn example3() -> anyhow::Result<()> {
         }
         // collision against rigid body
         {
+            let damp = 1.01;
             let transform_local2world = rb.local2world();
             let transform_world2local =
                 del_geo_core::mat3_col_major::try_inverse(&transform_local2world).unwrap();
@@ -343,11 +347,41 @@ fn example3() -> anyhow::Result<()> {
                     p_world,
                 )
                 .unwrap();
-                let vtx2xy = &rb.vtx2xy;
-                let is_inside = del_msh_core::polyloop2::is_inside(vtx2xy, &p_local);
-                if is_inside {
-                    dbg!("inside {} {}", i_pnt, i_step);
+                let is_inside = del_msh_core::polyloop2::is_inside(&rb.vtx2xy, &p_local);
+                if !is_inside {
+                    continue;
                 }
+                // println!("inside {} {}", i_pnt, i_step);
+                let q_local = del_msh_core::polyloop2::nearest_to_point(&rb.vtx2xy, &p_local)
+                    .unwrap()
+                    .1;
+                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(
+                    &transform_local2world,
+                    &q_local,
+                )
+                .unwrap();
+                let v_pq_world = vec2::sub(&q_world, p_world);
+                let penetration = v_pq_world.norm();
+                let u_pq_world = v_pq_world.scale(1. / penetration);
+                // how rigid body rotation change w.r.t. the unit force `u_pq_world`
+                let dtheta0 = vec2::area_quadrilateral(&q_world.sub(&rb.pos_tmp), &u_pq_world);
+                let dh_theta = dtheta0 * dtheta0 / rb.moment_of_inertia;
+                let dh_p = if pnt2massinv[i_pnt] == 0. {
+                    0.
+                } else {
+                    pnt2massinv[i_pnt]
+                };
+                let dh_q = 1. / rb.mass;
+                let lambda = penetration / (dh_theta + dh_q + dh_p);
+                if pnt2massinv[i_pnt] != 0. {
+                    pnt2xy_new[i_pnt * 2] += damp * lambda * u_pq_world[0] * pnt2massinv[i_pnt];
+                    pnt2xy_new[i_pnt * 2 + 1] += damp * lambda * u_pq_world[1] * pnt2massinv[i_pnt];
+                }
+                rb.pos_tmp[0] -= damp * lambda * u_pq_world[0] / rb.mass;
+                rb.pos_tmp[1] -= damp * lambda * u_pq_world[1] / rb.mass;
+                rb.theta_tmp -= damp * lambda * dtheta0 / rb.moment_of_inertia;
+                // dbg!(lambda, u_pq_world, rb.theta_tmp, penetration, pnt2massinv[i_pnt]);
+                println!("{} {} {}", i_step, i_pnt, penetration);
             }
         }
         // ------------
@@ -357,7 +391,7 @@ fn example3() -> anyhow::Result<()> {
         }
         rb.finalize_pbd_step(dt);
         // -------------
-        if i_step % 10 == 0 {
+        if i_step % 1 == 0 {
             canvas.clear(0);
             del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
                 &mut canvas.data,
@@ -367,6 +401,7 @@ fn example3() -> anyhow::Result<()> {
                 &transform_world2pix,
                 2,
             );
+
             for p in pnt2xy_def.chunks(2) {
                 del_canvas::rasterize::circle::fill::<f32, u8>(
                     &mut canvas.data,

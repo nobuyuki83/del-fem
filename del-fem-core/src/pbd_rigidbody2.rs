@@ -99,8 +99,11 @@ pub fn resolve_contact(
 }
 
 /// applying PBD attachment constraint
-/// # Return (lambda: f32)
-/// - lambda
+/// # Argument
+/// * `pos_a_attach` - attachment point in the local coordinate
+///
+/// # Return
+/// * `lambda` - coefficient in the projection
 pub fn attach(
     rb_a: &mut RigidBody,
     pos_a_attach: &[f32; 2],
