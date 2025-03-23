@@ -208,6 +208,7 @@ fn example3() -> anyhow::Result<()> {
     let num_edge = 10;
     let len_edge = 1f32 / num_edge as f32;
     let gravity = [0.0, 0.0];
+    let radius_circle = 0.8;
     // deformed vertex positions
     let mut pnt2xy_def = {
         use rand::Rng;
@@ -240,7 +241,7 @@ fn example3() -> anyhow::Result<()> {
         theta: 0f32,
         omega: 0f32,
         is_fix: false,
-        pos_tmp: [0.0, 0.0],
+        pos_cg_tmp: [0.0, 0.0],
         theta_tmp: 0f32,
         mass: 0f32,
         moment_of_inertia: 0.0,
@@ -255,7 +256,7 @@ fn example3() -> anyhow::Result<()> {
         rb.moment_of_inertia = rho * moment;
         rb.pos_cg_ref = cg;
     }
-    let pos_attach = [-0.0, -0.15];
+    let pos_attach = [-0.0, -0.13];
     // let pos_attach = [-0.0, -0.0];
     // visualization related stuff
     let mut canvas = del_canvas::canvas_gif::Canvas::new(
@@ -321,17 +322,38 @@ fn example3() -> anyhow::Result<()> {
                 damp,
             );
         }
-        // collision against circle boundary
+        // collision of vtx2xy against circle boundary
         for i_pnt in 0..pnt2xy_new.len() / 2 {
             let x = pnt2xy_new[i_pnt * 2 + 0];
             let y = pnt2xy_new[i_pnt * 2 + 1];
             let r = (x * x + y * y).sqrt();
-            let r0 = 0.8;
+            let r0 = radius_circle;
             if r > r0 {
                 let x = x / r * r0;
                 let y = y / r * r0;
                 pnt2xy_new[i_pnt * 2 + 0] = x;
                 pnt2xy_new[i_pnt * 2 + 1] = y;
+            }
+        }
+        // collision of rb against circle boundary
+        {
+            let transform_local2world = rb.local2world();
+            for q_local in rb.vtx2xy.chunks(2) {
+                let q_local = arrayref::array_ref![q_local, 0, 2];
+                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(&transform_local2world, q_local).unwrap();
+                if q_world.norm() < radius_circle { continue; }
+                let p_world = q_world.normalize().scale(radius_circle);
+                let v_pq_world = vec2::sub(&q_world, &p_world);
+                let penetration = v_pq_world.norm();
+                let u_pq_world = v_pq_world.scale(1. / penetration);
+                let dtheta0 = vec2::area_quadrilateral(&q_world.sub(&rb.pos_cg_tmp), &u_pq_world);
+                let dh_theta = dtheta0 * dtheta0 / rb.moment_of_inertia;
+                let dh_q = 1. / rb.mass;
+                let lambda = penetration / (dh_theta + dh_q);
+                let damp = 0.1;
+                rb.pos_cg_tmp[0] -= damp * lambda * u_pq_world[0] / rb.mass;
+                rb.pos_cg_tmp[1] -= damp * lambda * u_pq_world[1] / rb.mass;
+                rb.theta_tmp -= damp * lambda * dtheta0 / rb.moment_of_inertia;
             }
         }
         // collision against rigid body
@@ -364,7 +386,7 @@ fn example3() -> anyhow::Result<()> {
                 let penetration = v_pq_world.norm();
                 let u_pq_world = v_pq_world.scale(1. / penetration);
                 // how rigid body rotation change w.r.t. the unit force `u_pq_world`
-                let dtheta0 = vec2::area_quadrilateral(&q_world.sub(&rb.pos_tmp), &u_pq_world);
+                let dtheta0 = vec2::area_quadrilateral(&q_world.sub(&rb.pos_cg_tmp), &u_pq_world);
                 let dh_theta = dtheta0 * dtheta0 / rb.moment_of_inertia;
                 let dh_p = if pnt2massinv[i_pnt] == 0. {
                     0.
@@ -377,8 +399,8 @@ fn example3() -> anyhow::Result<()> {
                     pnt2xy_new[i_pnt * 2] += damp * lambda * u_pq_world[0] * pnt2massinv[i_pnt];
                     pnt2xy_new[i_pnt * 2 + 1] += damp * lambda * u_pq_world[1] * pnt2massinv[i_pnt];
                 }
-                rb.pos_tmp[0] -= damp * lambda * u_pq_world[0] / rb.mass;
-                rb.pos_tmp[1] -= damp * lambda * u_pq_world[1] / rb.mass;
+                rb.pos_cg_tmp[0] -= damp * lambda * u_pq_world[0] / rb.mass;
+                rb.pos_cg_tmp[1] -= damp * lambda * u_pq_world[1] / rb.mass;
                 rb.theta_tmp -= damp * lambda * dtheta0 / rb.moment_of_inertia;
                 // dbg!(lambda, u_pq_world, rb.theta_tmp, penetration, pnt2massinv[i_pnt]);
                 println!("{} {} {}", i_step, i_pnt, penetration);
@@ -391,13 +413,13 @@ fn example3() -> anyhow::Result<()> {
         }
         rb.finalize_pbd_step(dt);
         // -------------
-        if i_step % 1 == 0 {
+        if i_step % 5 == 0 {
             canvas.clear(0);
             del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &[0f32, 0f32],
-                0.8,
+                radius_circle,
                 &transform_world2pix,
                 2,
             );

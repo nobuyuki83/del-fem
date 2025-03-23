@@ -7,7 +7,7 @@ pub struct RigidBody {
     pub theta: f32,
     pub omega: f32,
     pub is_fix: bool,
-    pub pos_tmp: [f32; 2],
+    pub pos_cg_tmp: [f32; 2],
     pub theta_tmp: f32,
     pub mass: f32,
     pub moment_of_inertia: f32,
@@ -32,17 +32,17 @@ impl RigidBody {
             return;
         }
         self.velo = [
-            (self.pos_tmp[0] - self.pos_cg_def[0]) / dt,
-            (self.pos_tmp[1] - self.pos_cg_def[1]) / dt,
+            (self.pos_cg_tmp[0] - self.pos_cg_def[0]) / dt,
+            (self.pos_cg_tmp[1] - self.pos_cg_def[1]) / dt,
         ];
         self.omega = (self.theta_tmp - self.theta) / dt;
-        self.pos_cg_def = self.pos_tmp;
+        self.pos_cg_def = self.pos_cg_tmp;
         self.theta = self.theta_tmp;
     }
 
     pub fn initialize_pbd_step(&mut self, dt: f32, gravity: &[f32; 2]) {
         if self.is_fix {
-            self.pos_tmp = self.pos_cg_def;
+            self.pos_cg_tmp = self.pos_cg_def;
             self.theta_tmp = self.theta;
             return;
         }
@@ -50,7 +50,7 @@ impl RigidBody {
             self.velo[0] + gravity[0] * dt,
             self.velo[1] + gravity[1] * dt,
         ];
-        self.pos_tmp = [
+        self.pos_cg_tmp = [
             self.pos_cg_def[0] + dt * self.velo[0],
             self.pos_cg_def[1] + dt * self.velo[1],
         ];
@@ -80,17 +80,17 @@ pub fn resolve_contact(
     }
     let lambda = penetration / deno; // force*dt*dt
     if !rb_a.is_fix {
-        rb_a.pos_tmp = [
-            rb_a.pos_tmp[0] + (lambda / rb_a.mass) * n_b[0],
-            rb_a.pos_tmp[1] + (lambda / rb_a.mass) * n_b[1],
+        rb_a.pos_cg_tmp = [
+            rb_a.pos_cg_tmp[0] + (lambda / rb_a.mass) * n_b[0],
+            rb_a.pos_cg_tmp[1] + (lambda / rb_a.mass) * n_b[1],
         ];
         let t_a = vec2::area_quadrilateral(&vec2::sub(p_a, &rb_a.pos_cg_def), n_b);
         rb_a.theta_tmp += t_a * lambda / rb_a.moment_of_inertia;
     }
     if !rb_b.is_fix {
-        rb_b.pos_tmp = [
-            rb_b.pos_tmp[0] - (lambda / rb_b.mass) * n_b[0],
-            rb_b.pos_tmp[1] - (lambda / rb_b.mass) * n_b[1],
+        rb_b.pos_cg_tmp = [
+            rb_b.pos_cg_tmp[0] - (lambda / rb_b.mass) * n_b[0],
+            rb_b.pos_cg_tmp[1] - (lambda / rb_b.mass) * n_b[1],
         ];
         let t_b = -vec2::area_quadrilateral(&vec2::sub(p_b, &rb_b.pos_cg_def), n_b);
         rb_b.theta_tmp += t_b * lambda / rb_b.moment_of_inertia;
@@ -129,9 +129,9 @@ pub fn attach(
     }
     let lambda = penetration / deno; // force*dt*dt
     if !rb_a.is_fix {
-        rb_a.pos_tmp = [
-            rb_a.pos_tmp[0] + damp * (lambda / rb_a.mass) * n_b[0],
-            rb_a.pos_tmp[1] + damp * (lambda / rb_a.mass) * n_b[1],
+        rb_a.pos_cg_tmp = [
+            rb_a.pos_cg_tmp[0] + damp * (lambda / rb_a.mass) * n_b[0],
+            rb_a.pos_cg_tmp[1] + damp * (lambda / rb_a.mass) * n_b[1],
         ];
         let t_a = vec2::area_quadrilateral(&vec2::sub(&p_a, &rb_a.pos_cg_def), &n_b);
         rb_a.theta_tmp += damp * t_a * lambda / rb_a.moment_of_inertia;
