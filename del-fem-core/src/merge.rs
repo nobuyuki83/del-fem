@@ -1,3 +1,4 @@
+#[allow(clippy::needless_range_loop)]
 pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
     node2row: &[usize; N_NODE],
     node2col: &[usize; N_NODE],

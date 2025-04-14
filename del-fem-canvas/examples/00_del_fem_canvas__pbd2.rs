@@ -340,8 +340,14 @@ fn example3() -> anyhow::Result<()> {
             let transform_local2world = rb.local2world();
             for q_local in rb.vtx2xy.chunks(2) {
                 let q_local = arrayref::array_ref![q_local, 0, 2];
-                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(&transform_local2world, q_local).unwrap();
-                if q_world.norm() < radius_circle { continue; }
+                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(
+                    &transform_local2world,
+                    q_local,
+                )
+                .unwrap();
+                if q_world.norm() < radius_circle {
+                    continue;
+                }
                 let p_world = q_world.normalize().scale(radius_circle);
                 let v_pq_world = vec2::sub(&q_world, &p_world);
                 let penetration = v_pq_world.norm();
@@ -369,7 +375,7 @@ fn example3() -> anyhow::Result<()> {
                     p_world,
                 )
                 .unwrap();
-                let is_inside = del_msh_core::polyloop2::is_inside(&rb.vtx2xy, &p_local);
+                let is_inside = del_msh_core::polyloop2::is_include_a_point(&rb.vtx2xy, &p_local);
                 if !is_inside {
                     continue;
                 }

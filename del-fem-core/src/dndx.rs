@@ -1,3 +1,4 @@
+#[allow(clippy::needless_range_loop)]
 pub fn disp_grad_tensor<const NNO: usize, const NDIM: usize, Real>(
     dndx: &[[Real; NDIM]; NNO],
     node2disp: &[[Real; NDIM]; NNO],
