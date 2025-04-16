@@ -1,0 +1,27 @@
+[package]
+name = "del-fem-dlpack"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "del_fem_dlpack"
+crate-type = ["cdylib"]
+
+[features]
+cuda = ["dep:del-cudarc"]
+
+[dependencies]
+pyo3.workspace = true
+dlpack = "0.2.0"
+# del-fem-cudarc = {path="../del-fem-cudarc"}
+
+
+# for develop
+# del-cudarc = {path = "../../del-cudarc" }
+
+# for push
+del-cudarc = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
+
+
+
+

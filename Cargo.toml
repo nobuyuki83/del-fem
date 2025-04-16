@@ -1,5 +1,13 @@
 [workspace]
-members = [ "del-fem-canvas","del-fem-core", "del-fem-pyo3", "del-fem-ls", "del-fem-cudarc", "del-fem-candle"]
+members = [
+    "del-fem-canvas",
+    "del-fem-core",
+    "del-fem-pyo3",
+    "del-fem-ls",
+    "del-fem-cudarc",
+    "del-fem-candle",
+    "del-fem-dlpack"
+]
 exclude = ["del-fem-cudarc-kernel"]
 resolver = "2"
 

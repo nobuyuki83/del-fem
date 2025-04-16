@@ -4,6 +4,8 @@ pub mod laplacian_smoothing_jacobi;
 #[cfg(feature = "cuda")]
 use del_cudarc::cudarc;
 
+
+/*
 #[cfg(feature = "cuda")]
 pub fn get_or_load_func(
     dev: &std::sync::Arc<cudarc::driver::CudaDevice>,
@@ -18,3 +20,5 @@ pub fn get_or_load_func(
     }
     Ok(dev.get_func(module_name, module_name).unwrap())
 }
+ */
+

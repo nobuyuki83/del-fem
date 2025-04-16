@@ -1,8 +1,8 @@
-use cudarc::driver::{CudaDevice, CudaSlice, CudaViewMut, DeviceSlice};
+use cudarc::driver::{CudaStream, CudaSlice, CudaViewMut, PushKernelArg};
 use del_cudarc::cudarc;
 
 pub fn solve(
-    dev: &std::sync::Arc<CudaDevice>,
+    stream: &std::sync::Arc<CudaStream>,
     vtx2idx: &CudaSlice<u32>,
     idx2vtx: &CudaSlice<u32>,
     lambda: f32,
@@ -16,6 +16,22 @@ pub fn solve(
     assert_eq!((num_vtx * num_dim) as usize, vtx2vars_prev.len());
     assert_eq!((num_vtx * num_dim) as usize, vtx2trgs.len());
     let cfg = cudarc::driver::LaunchConfig::for_num_elems(num_vtx);
+    let func = del_cudarc::get_or_load_func(
+        &stream.context(),
+        "laplacian_smoothing_jacobi",
+        del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
+    )?;
+    let mut builder = stream.launch_builder(&func);
+    builder.arg(&num_vtx);
+    builder.arg(vtx2idx);
+    builder.arg(idx2vtx);
+    builder.arg(&lambda);
+    builder.arg(vtx2vars_next);
+    builder.arg(vtx2vars_prev);
+    builder.arg(vtx2trgs);
+    unsafe { builder.launch(cfg)? };
+    /*
+    unsafe { gpu_solve.launch(cfg, param) }?;
     let param = (
         num_vtx,
         vtx2idx,
@@ -25,12 +41,6 @@ pub fn solve(
         vtx2vars_prev,
         vtx2trgs,
     );
-    use cudarc::driver::LaunchAsync;
-    let gpu_solve = crate::get_or_load_func(
-        &dev,
-        "laplacian_smoothing_jacobi",
-        del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
-    )?;
-    unsafe { gpu_solve.launch(cfg, param) }?;
+     */
     Ok(())
 }
