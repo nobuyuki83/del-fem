@@ -20,14 +20,15 @@ fn main() -> anyhow::Result<()> {
     };
     let lambda = 3f32;
     // ------------------
-    let dev = cudarc::driver::CudaDevice::new(0)?;
-    let vtx2idx_dev = dev.htod_copy(vtx2idx.clone())?;
-    let idx2vtx_dev = dev.htod_copy(idx2vtx.clone())?;
-    let vtx2rhs_dev = dev.htod_copy(vtx2rhs.clone())?;
-    let mut vtx2lhs0_dev: CudaSlice<f32> = dev.alloc_zeros(vtx2rhs_dev.len())?;
-    let mut vtx2lhs1_dev: CudaSlice<f32> = dev.alloc_zeros(vtx2lhs0_dev.len())?;
+    let ctx = cudarc::driver::CudaContext::new(0)?;
+    let stream = ctx.default_stream();
+    let vtx2idx_dev = stream.memcpy_stod(&vtx2idx)?;
+    let idx2vtx_dev = stream.memcpy_stod(&idx2vtx)?;
+    let vtx2rhs_dev = stream.memcpy_stod(&vtx2rhs)?;
+    let mut vtx2lhs0_dev: CudaSlice<f32> = stream.alloc_zeros(vtx2rhs_dev.len())?;
+    let mut vtx2lhs1_dev: CudaSlice<f32> = stream.alloc_zeros(vtx2lhs0_dev.len())?;
     del_fem_cudarc::laplacian_smoothing_jacobi::solve(
-        &dev,
+        &stream,
         &vtx2idx_dev,
         &idx2vtx_dev,
         lambda,

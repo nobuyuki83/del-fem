@@ -3,7 +3,7 @@ use num_traits::AsPrimitive;
 
 /// solve linear system using the Confugate Gradient (CG) method
 pub fn conjugate_gradient<T>(
-    r_vec: &mut Vec<T>,
+    r_vec: &mut [T],
     u_vec: &mut Vec<T>,
     ap_vec: &mut Vec<T>,
     p_vec: &mut Vec<T>,
