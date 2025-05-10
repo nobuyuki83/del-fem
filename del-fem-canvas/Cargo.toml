@@ -18,7 +18,7 @@ rand.workspace = true
 anyhow.workspace = true
 #
 del-geo-core.workspace = true
-del-geo-nalgebra.workspace = true
+# del-geo-nalgebra.workspace = true
 del-msh-core.workspace = true
 del-fem-ls.workspace = true
 del-fem-core.workspace = true

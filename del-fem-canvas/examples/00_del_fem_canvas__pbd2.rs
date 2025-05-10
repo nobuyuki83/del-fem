@@ -70,7 +70,7 @@ fn example1() -> anyhow::Result<()> {
         if i_step % 10 == 0 {
             canvas.clear(0);
             for p in pnt2xy_def.chunks(2) {
-                del_canvas::rasterize::circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle2::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -176,7 +176,7 @@ fn example2() -> anyhow::Result<()> {
         }
         if i_step % 10 == 0 {
             canvas.clear(0);
-            del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
+            del_canvas::rasterize::circle2::stroke_dda::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &[0f32, 0f32],
@@ -185,7 +185,7 @@ fn example2() -> anyhow::Result<()> {
                 2,
             );
             for p in pnt2xy_def.chunks(2) {
-                del_canvas::rasterize::circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle2::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -340,8 +340,14 @@ fn example3() -> anyhow::Result<()> {
             let transform_local2world = rb.local2world();
             for q_local in rb.vtx2xy.chunks(2) {
                 let q_local = arrayref::array_ref![q_local, 0, 2];
-                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(&transform_local2world, q_local).unwrap();
-                if q_world.norm() < radius_circle { continue; }
+                let q_world = del_geo_core::mat3_col_major::transform_homogeneous(
+                    &transform_local2world,
+                    q_local,
+                )
+                .unwrap();
+                if q_world.norm() < radius_circle {
+                    continue;
+                }
                 let p_world = q_world.normalize().scale(radius_circle);
                 let v_pq_world = vec2::sub(&q_world, &p_world);
                 let penetration = v_pq_world.norm();
@@ -369,7 +375,7 @@ fn example3() -> anyhow::Result<()> {
                     p_world,
                 )
                 .unwrap();
-                let is_inside = del_msh_core::polyloop2::is_inside(&rb.vtx2xy, &p_local);
+                let is_inside = del_msh_core::polyloop2::is_include_a_point(&rb.vtx2xy, &p_local);
                 if !is_inside {
                     continue;
                 }
@@ -415,7 +421,7 @@ fn example3() -> anyhow::Result<()> {
         // -------------
         if i_step % 5 == 0 {
             canvas.clear(0);
-            del_canvas::rasterize::circle::stroke_dda::<f32, u8>(
+            del_canvas::rasterize::circle2::stroke_dda::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &[0f32, 0f32],
@@ -425,7 +431,7 @@ fn example3() -> anyhow::Result<()> {
             );
 
             for p in pnt2xy_def.chunks(2) {
-                del_canvas::rasterize::circle::fill::<f32, u8>(
+                del_canvas::rasterize::circle2::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &[p[0], p[1]],
@@ -440,7 +446,7 @@ fn example3() -> anyhow::Result<()> {
                     &transform_world2pix,
                     &obj2world,
                 );
-                del_canvas::rasterize::polygon::stroke::<f32, u8>(
+                del_canvas::rasterize::polygon2::stroke::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,
                     &rb.vtx2xy,

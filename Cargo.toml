@@ -5,7 +5,7 @@ resolver = "2"
 
 [workspace.package]
 name = "del-fem"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
@@ -28,13 +28,13 @@ pyo3 = { version = "0.23.4", features = ["extension-module"] }
 numpy = "0.23.0"
 
 # internal my library
-del-fem-ls = { path = "del-fem-ls" }
 del-fem-core = { path = "del-fem-core" }
 del-fem-cudarc = { path = "del-fem-cudarc"}
 del-fem-cudarc-kernel = { path = "del-fem-cudarc-kernel"}
 del-fem-candle = { path = "del-fem-candle" }
 
 # for development
+# del-fem-ls = { path = "del-fem-ls" }
 # del-geo-core = { path = "../del-geo/del-geo-core" }
 # del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
 # del-msh-core = { path = "../del-msh/del-msh-core" }
@@ -42,15 +42,14 @@ del-fem-candle = { path = "del-fem-candle" }
 
 # for GitHub push
 del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-geo-nalgebra = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
 del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
+del-fem-ls = { path = "del-fem-ls" }
 
 
 # for crate publish
-# del-geo-core = "0.1.33"
-# del-geo-nalgebra = "0.1.33"
-# del-msh-core = "0.1.37"
-
-
+# del-geo-core = "=0.1.34"
+# del-msh-core = "=0.1.39"
+# del-canvas = "=0.1.5"
+# del-fem-ls = "=0.1.6"
 

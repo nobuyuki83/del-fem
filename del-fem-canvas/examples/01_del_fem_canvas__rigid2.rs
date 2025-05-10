@@ -167,7 +167,7 @@ fn main() -> anyhow::Result<()> {
             let obj2world = rb.local2world();
             let obj2pix =
                 del_geo_core::mat3_col_major::mult_mat_col_major(&transform_world2pix, &obj2world);
-            del_canvas::rasterize::polygon::stroke::<f32, u8>(
+            del_canvas::rasterize::polygon2::stroke::<f32, u8>(
                 &mut canvas.data,
                 canvas.width,
                 &rb.vtx2xy,
