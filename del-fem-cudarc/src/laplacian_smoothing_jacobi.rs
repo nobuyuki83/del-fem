@@ -1,4 +1,4 @@
-use cudarc::driver::{CudaStream, CudaSlice, CudaViewMut, PushKernelArg};
+use cudarc::driver::{CudaSlice, CudaStream, CudaViewMut, PushKernelArg};
 use del_cudarc_safe::cudarc;
 
 pub fn solve(

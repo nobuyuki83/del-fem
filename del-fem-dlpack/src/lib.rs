@@ -2,7 +2,9 @@ use dlpack::ManagedTensor;
 use pyo3::prelude::*;
 use pyo3::types::{PyAnyMethods, PyCapsule};
 
-fn get_managed_tensor_from_pyany<'a>(vtx2idx: &'a pyo3::Bound<'a, PyAny>) -> PyResult<&'a dlpack::Tensor> {
+fn get_managed_tensor_from_pyany<'a>(
+    vtx2idx: &'a pyo3::Bound<'a, PyAny>,
+) -> PyResult<&'a dlpack::Tensor> {
     let capsule = vtx2idx.downcast::<PyCapsule>()?;
     let ptr = capsule.pointer() as *mut ManagedTensor;
     if ptr.is_null() {
@@ -10,28 +12,29 @@ fn get_managed_tensor_from_pyany<'a>(vtx2idx: &'a pyo3::Bound<'a, PyAny>) -> PyR
             "Null ManagedTensor",
         ));
     }
-    let tensor = unsafe{&(*ptr).dl_tensor};
+    let tensor = unsafe { &(*ptr).dl_tensor };
     Ok(&tensor)
 }
 
 /// Pythonから渡された PyCapsule を Rust 側で読み取る
 #[pyfunction]
-fn solve(_py: Python,
-         vtx2idx: &Bound<'_, PyAny>,
-         idx2vtx: &Bound<'_, PyAny>,
-         vtx2xyz: &Bound<'_, PyAny>,
-         rhs: &Bound<'_, PyAny>,
-         lambda: f32,
-         vtx2xyz_tmp: &Bound<'_, PyAny>) -> PyResult<()> {
-
+fn solve(
+    _py: Python,
+    vtx2idx: &Bound<'_, PyAny>,
+    idx2vtx: &Bound<'_, PyAny>,
+    vtx2xyz: &Bound<'_, PyAny>,
+    rhs: &Bound<'_, PyAny>,
+    lambda: f32,
+    vtx2xyz_tmp: &Bound<'_, PyAny>,
+) -> PyResult<()> {
     let vtx2idx = get_managed_tensor_from_pyany(vtx2idx)?;
     let idx2vtx = get_managed_tensor_from_pyany(idx2vtx)?;
     let vtx2xyz = get_managed_tensor_from_pyany(vtx2xyz)?;
     let rhs = get_managed_tensor_from_pyany(rhs)?;
     let vtx2xyz_tmp = get_managed_tensor_from_pyany(vtx2xyz_tmp)?;
 
-    let vtx2idx_shape = unsafe{ std::slice::from_raw_parts(vtx2idx.shape, vtx2idx.ndim as usize)};
-    let vtx2xyz_shape = unsafe{ std::slice::from_raw_parts(vtx2xyz.shape, vtx2xyz.ndim as usize)};
+    let vtx2idx_shape = unsafe { std::slice::from_raw_parts(vtx2idx.shape, vtx2idx.ndim as usize) };
+    let vtx2xyz_shape = unsafe { std::slice::from_raw_parts(vtx2xyz.shape, vtx2xyz.ndim as usize) };
     let num_vtx = vtx2idx_shape[0];
     let num_dim = vtx2xyz_shape[1];
     dbg!(num_vtx, num_dim);
@@ -49,10 +52,10 @@ fn solve(_py: Python,
             #[cfg(feature = "cuda")]
             dlpack::device_type_codes::GPU => {
                 println!("GPU_{}", vtx2idx.ctx.device_id);
-                let (function, _module) =
-                    del_cudarc_sys::load_function_in_module(
-                        del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
-                        "laplacian_smoothing_jacobi");
+                let (function, _module) = del_cudarc_sys::load_function_in_module(
+                    del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
+                    "laplacian_smoothing_jacobi",
+                );
                 let stream = del_cudarc_sys::create_stream_in_current_context();
                 for _itr in 0..20 {
                     {

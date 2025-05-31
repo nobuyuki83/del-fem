@@ -4,7 +4,6 @@ pub mod laplacian_smoothing_jacobi;
 #[cfg(feature = "cuda")]
 use del_cudarc_safe::cudarc;
 
-
 /*
 #[cfg(feature = "cuda")]
 pub fn get_or_load_func(
@@ -21,4 +20,3 @@ pub fn get_or_load_func(
     Ok(dev.get_func(module_name, module_name).unwrap())
 }
  */
-
