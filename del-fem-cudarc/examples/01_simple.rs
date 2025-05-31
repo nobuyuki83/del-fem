@@ -1,5 +1,5 @@
 #[cfg(feature = "cuda")]
-use del_cudarc::cudarc;
+use del_cudarc_safe::cudarc;
 
 #[cfg(feature = "cuda")]
 use cudarc::driver::{CudaSlice, DeviceSlice};

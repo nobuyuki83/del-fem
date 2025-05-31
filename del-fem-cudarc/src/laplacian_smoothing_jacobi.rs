@@ -1,5 +1,5 @@
 use cudarc::driver::{CudaStream, CudaSlice, CudaViewMut, PushKernelArg};
-use del_cudarc::cudarc;
+use del_cudarc_safe::cudarc;
 
 pub fn solve(
     stream: &std::sync::Arc<CudaStream>,
@@ -16,7 +16,7 @@ pub fn solve(
     assert_eq!((num_vtx * num_dim) as usize, vtx2vars_prev.len());
     assert_eq!((num_vtx * num_dim) as usize, vtx2trgs.len());
     let cfg = cudarc::driver::LaunchConfig::for_num_elems(num_vtx);
-    let func = del_cudarc::get_or_load_func(
+    let func = del_cudarc_safe::get_or_load_func(
         &stream.context(),
         "laplacian_smoothing_jacobi",
         del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,

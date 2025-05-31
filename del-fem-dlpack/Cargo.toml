@@ -8,19 +8,19 @@ name = "del_fem_dlpack"
 crate-type = ["cdylib"]
 
 [features]
-cuda = ["dep:del-cudarc"]
+cuda = ["dep:del-cudarc-sys", "dep:del-cudarc-kernel", "del-fem-cudarc-kernel"]
 
 [dependencies]
 pyo3.workspace = true
 dlpack = "0.2.0"
-# del-fem-cudarc = {path="../del-fem-cudarc"}
-
 
 # for develop
-# del-cudarc = {path = "../../del-cudarc" }
+del-cudarc-sys = {path = "../../del-cudarc/del-cudarc-sys", optional = true}
+del-cudarc-kernel = { path = "../../del-cudarc/del-cudarc-kernel", optional = true}
+del-fem-cudarc-kernel = { path="../del-fem-cudarc-kernel", optional = true }
 
 # for push
-del-cudarc = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
+# del-cudarc = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
 
 
 
