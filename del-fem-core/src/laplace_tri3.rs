@@ -37,7 +37,7 @@ pub fn to_linearsystem(
     val_dia: f32,
     val_offdia: f32,
 ) -> del_fem_ls::linearsystem::Solver<f32> {
-    let vtx2vtx = del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx, 3, num_vtx, false);
+    let vtx2vtx = del_msh_cpu::vtx2vtx::from_uniform_mesh(tri2vtx, 3, num_vtx, false);
     let mut ls = del_fem_ls::linearsystem::Solver::new();
     ls.initialize(&vtx2vtx.0, &vtx2vtx.1);
     //

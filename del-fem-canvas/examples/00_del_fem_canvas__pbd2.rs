@@ -249,9 +249,9 @@ fn example3() -> anyhow::Result<()> {
     // initializing the rigid body
     {
         let rho = 1000.0;
-        let area = del_msh_core::polyloop2::area(&rb.vtx2xy);
-        let cg = del_msh_core::polyloop2::cog_as_face(&rb.vtx2xy);
-        let moment = del_msh_core::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
+        let area = del_msh_cpu::polyloop2::area(&rb.vtx2xy);
+        let cg = del_msh_cpu::polyloop2::cog_as_face(&rb.vtx2xy);
+        let moment = del_msh_cpu::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
         rb.mass = rho * area;
         rb.moment_of_inertia = rho * moment;
         rb.pos_cg_ref = cg;
@@ -375,12 +375,12 @@ fn example3() -> anyhow::Result<()> {
                     p_world,
                 )
                 .unwrap();
-                let is_inside = del_msh_core::polyloop2::is_include_a_point(&rb.vtx2xy, &p_local);
+                let is_inside = del_msh_cpu::polyloop2::is_include_a_point(&rb.vtx2xy, &p_local);
                 if !is_inside {
                     continue;
                 }
                 // println!("inside {} {}", i_pnt, i_step);
-                let q_local = del_msh_core::polyloop2::nearest_to_point(&rb.vtx2xy, &p_local)
+                let q_local = del_msh_cpu::polyloop2::nearest_to_point(&rb.vtx2xy, &p_local)
                     .unwrap()
                     .1;
                 let q_world = del_geo_core::mat3_col_major::transform_homogeneous(

@@ -13,7 +13,7 @@ nalgebra.workspace = true
 itertools.workspace = true
 arrayref.workspace = true
 del-geo-core.workspace = true
-del-msh-core.workspace = true
+del-msh-cpu.workspace = true
 
 # for develop/push
 del-fem-ls = {workspace = true}

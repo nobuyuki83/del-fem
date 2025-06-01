@@ -159,11 +159,11 @@ impl CustomOp1 for LaplacianSmoothing {
 #[test]
 #[allow(unused_variables)]
 fn test_laplacian_smoothing() -> candle_core::Result<()> {
-    let (tri2vtx, vtx2xyz) = del_msh_core::trimesh3_primitive::sphere_yup(1f32, 512, 512);
+    let (tri2vtx, vtx2xyz) = del_msh_cpu::trimesh3_primitive::sphere_yup(1f32, 512, 512);
     let num_vtx = vtx2xyz.len() / 3;
     println!("num_vtx: {}", num_vtx);
     let (vtx2idx, idx2vtx) =
-        del_msh_core::vtx2vtx::from_uniform_mesh::<u32>(&tri2vtx, 3, num_vtx, false);
+        del_msh_cpu::vtx2vtx::from_uniform_mesh::<u32>(&tri2vtx, 3, num_vtx, false);
     let n = vtx2idx.len();
     let vtx2idx = Tensor::from_vec(vtx2idx, n, &candle_core::Device::Cpu)?;
     let n = idx2vtx.len();

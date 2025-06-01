@@ -10,7 +10,7 @@ cuda = ["dep:del-fem-cudarc-kernel", "dep:del-cudarc-safe"]
 
 [dependencies]
 anyhow.workspace = true
-del-msh-core.workspace = true
+del-msh-cpu.workspace = true
 
 # for develop
 # del-fem-cudarc-kernel = {workspace = true, optional = true}

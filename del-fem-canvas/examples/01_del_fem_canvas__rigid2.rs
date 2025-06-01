@@ -16,7 +16,7 @@ fn step_time(rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody], dt: f32, gravi
             for ivtx in 0..rbs[irb].vtx2xy.len() / 2 {
                 let xyi = arrayref::array_ref!(rbs[irb].vtx2xy, ivtx * 2, 2);
                 let xyi_lclj = mat3_col_major::transform_homogeneous(&lcli2lclj, xyi).unwrap();
-                let (sdf, nrm) = del_msh_core::polyloop2::wdw_sdf(&rbs[jrb].vtx2xy, &xyi_lclj);
+                let (sdf, nrm) = del_msh_cpu::polyloop2::wdw_sdf(&rbs[jrb].vtx2xy, &xyi_lclj);
                 if sdf > 0.0 {
                     continue;
                 }
@@ -137,9 +137,9 @@ fn main() -> anyhow::Result<()> {
     let mut rbs = vec![rb0, rb1];
     for rb in rbs.iter_mut() {
         let rho = 1.0;
-        let area = del_msh_core::polyloop2::area(&rb.vtx2xy);
-        let cg = del_msh_core::polyloop2::cog_as_face(&rb.vtx2xy);
-        let moment = del_msh_core::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
+        let area = del_msh_cpu::polyloop2::area(&rb.vtx2xy);
+        let cg = del_msh_cpu::polyloop2::cog_as_face(&rb.vtx2xy);
+        let moment = del_msh_cpu::polyloop2::moment_of_inertia(&rb.vtx2xy, &cg);
         rb.mass = rho * area;
         rb.moment_of_inertia = rho * moment;
         rb.pos_cg_ref = cg;

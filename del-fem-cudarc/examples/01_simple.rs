@@ -6,9 +6,9 @@ use cudarc::driver::{CudaSlice, DeviceSlice};
 
 #[cfg(feature = "cuda")]
 fn main() -> anyhow::Result<()> {
-    let (tri2vtx, vtx2xyz) = del_msh_core::trimesh3_primitive::sphere_yup::<u32, f32>(1., 32, 32);
+    let (tri2vtx, vtx2xyz) = del_msh_cpu::trimesh3_primitive::sphere_yup::<u32, f32>(1., 32, 32);
     let num_vtx = vtx2xyz.len() / 3;
-    let (vtx2idx, idx2vtx) = del_msh_core::vtx2vtx::from_uniform_mesh(&tri2vtx, 3, num_vtx, false);
+    let (vtx2idx, idx2vtx) = del_msh_cpu::vtx2vtx::from_uniform_mesh(&tri2vtx, 3, num_vtx, false);
     let vtx2rhs = {
         let mut vtx2rhs = vec![0f32; num_vtx];
         for i_vtx in 0..num_vtx {

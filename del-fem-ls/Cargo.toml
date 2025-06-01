@@ -12,4 +12,4 @@ repository.workspace = true
 [dependencies]
 nalgebra = "0.33.0"
 num-traits = "0.2.19"
-del-msh-core = {workspace = true}
+del-msh-cpu = {workspace = true}

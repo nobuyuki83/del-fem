@@ -15,4 +15,4 @@ arrayref = {workspace = true}
 #
 del-fem-core = {workspace = true}
 del-geo-core = {workspace = true}
-del-msh-core = {workspace = true}
+del-msh-cpu = {workspace = true}

@@ -63,10 +63,10 @@ pub fn values_of_sparse_matrix_laplacian(
 fn test_optimal_rotation_for_arap() {
     use del_geo_core::mat3_col_major::Mat3ColMajor;
     use del_geo_core::mat4_col_major::Mat4ColMajor;
-    let (tri2vtx, vtx2xyz_ini) = del_msh_core::trimesh3_primitive::capsule_yup(0.2, 1.6, 24, 4, 24);
+    let (tri2vtx, vtx2xyz_ini) = del_msh_cpu::trimesh3_primitive::capsule_yup(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
     let (row2idx, idx2col) =
-        del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
+        del_msh_cpu::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
     let (_row2val, idx2val) = values_of_sparse_matrix_laplacian(
         tri2vtx.as_slice(),
         vtx2xyz_ini.as_slice(),
@@ -77,7 +77,7 @@ fn test_optimal_rotation_for_arap() {
     let r0 = {
         let a_mat = del_geo_core::mat4_col_major::from_bryant_angles(1., 1., 3.);
         for i_vtx in 0..vtx2xyz_def.len() / 3 {
-            let p0 = del_msh_core::vtx2xyz::to_vec3(&vtx2xyz_ini, i_vtx);
+            let p0 = del_msh_cpu::vtx2xyz::to_vec3(&vtx2xyz_ini, i_vtx);
             let p1 = a_mat.transform_homogeneous(&p0).unwrap();
             vtx2xyz_def[i_vtx * 3 + 0] = p1[0];
             vtx2xyz_def[i_vtx * 3 + 1] = p1[1];
@@ -165,10 +165,10 @@ fn test_energy_arap_spoke() {
     use del_geo_core::mat3_col_major::Mat3ColMajor;
     use del_geo_core::vec3::Vec3;
     let (tri2vtx, vtx2xyz_ini) =
-        del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
+        del_msh_cpu::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
     let (vtx2idx, idx2vtx) =
-        del_msh_core::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
+        del_msh_cpu::vtx2vtx::from_uniform_mesh(tri2vtx.as_slice(), 3, num_vtx, false);
     let (_row2val, idx2val) = values_of_sparse_matrix_laplacian(
         tri2vtx.as_slice(),
         vtx2xyz_ini.as_slice(),
@@ -190,7 +190,7 @@ fn test_energy_arap_spoke() {
         }
         vtx2xyz_def
     };
-    del_msh_core::io_obj::save_tri2vtx_vtx2xyz(
+    del_msh_cpu::io_obj::save_tri2vtx_vtx2xyz(
         "../target/hoge.obj",
         tri2vtx.as_slice(),
         vtx2xyz_def.as_slice(),
@@ -266,13 +266,13 @@ fn test_energy_arap_spoke() {
     for i_vtx in 0..num_vtx {
         let res = {
             let mut res = [0f64; 3];
-            let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), i_vtx);
-            let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), i_vtx);
+            let p0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), i_vtx);
+            let p1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), i_vtx);
             let r_i = arrayref::array_ref![&vtx2rot, i_vtx * 9, 9];
             for jdx in vtx2idx[i_vtx]..vtx2idx[i_vtx + 1] {
                 let j_vtx = idx2vtx[jdx];
-                let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), j_vtx);
-                let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), j_vtx);
+                let q0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini.as_slice(), j_vtx);
+                let q1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def.as_slice(), j_vtx);
                 let r_j = arrayref::array_ref![&vtx2rot, j_vtx * 9, 9];
                 let weight = -idx2val[jdx];
                 let rm = r_i.add(&r_j).scale(0.5);
@@ -325,12 +325,12 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
             &vtx2xyz_ini[i1 * 3..i1 * 3 + 3].try_into().unwrap(),
             &vtx2xyz_ini[i2 * 3..i2 * 3 + 3].try_into().unwrap(),
         );
-        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
+        let p0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         // nalgebra matrix for R^T to make 'vtx2rot' row-major order
         let rt = del_geo_core::mat3_col_major::add_three(
             &del_geo_core::mat3_col_major::from_scaled_outer_product(
@@ -527,12 +527,12 @@ where
     let mut tot_w = T::zero();
     for node2vtx in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (node2vtx[0], node2vtx[1], node2vtx[2]);
-        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
+        let p0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (w, _) = wdw_arap_spoke_rim(
             CornerVertices { p0, p1, p2 },
             CornerVertices {
@@ -552,7 +552,7 @@ where
 #[test]
 fn test_energy_arap_spoke_rim() {
     let (tri2vtx, vtx2xyz_ini) =
-        del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
+        del_msh_cpu::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
     let num_vtx = vtx2xyz_ini.len() / 3;
     let vtx2xyz_def = {
         let mut vtx2xyz_def = vec![0f64; vtx2xyz_ini.len()];
@@ -569,7 +569,7 @@ fn test_energy_arap_spoke_rim() {
         }
         vtx2xyz_def
     };
-    let _ = del_msh_core::io_obj::save_tri2vtx_vtx2xyz(
+    let _ = del_msh_cpu::io_obj::save_tri2vtx_vtx2xyz(
         "target/hoge.obj",
         tri2vtx.as_slice(),
         vtx2xyz_def.as_slice(),
@@ -600,12 +600,12 @@ pub fn residual_arap_spoke_rim<T>(
     vtx2res.fill(T::zero());
     for nodes in tri2vtx.chunks(3) {
         let (i0, i1, i2) = (nodes[0], nodes[1], nodes[2]);
-        let p0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
-        let p1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
-        let p2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
-        let q0 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i0);
-        let q1 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i1);
-        let q2 = del_msh_core::vtx2xyz::to_vec3(vtx2xyz_def, i2);
+        let p0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i0);
+        let p1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i1);
+        let p2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_ini, i2);
+        let q0 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i0);
+        let q1 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i1);
+        let q2 = del_msh_cpu::vtx2xyz::to_vec3(vtx2xyz_def, i2);
         let (_, dw) = wdw_arap_spoke_rim(
             CornerVertices { p0, p1, p2 },
             CornerVertices {
@@ -654,7 +654,7 @@ mod tests {
     #[test]
     fn test_energy_arap_spoke_rim_resolution() {
         let (tri2vtx0, vtx2xyz0_ini) =
-            del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
+            del_msh_cpu::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 24, 4, 24);
         let vtx2rot0 = {
             let mut vtx2rot0 = vec![0f64; vtx2xyz0_ini.len() * 3];
             for i in 0..vtx2xyz0_ini.len() / 3 {
@@ -673,7 +673,7 @@ mod tests {
         );
         //
         let (tri2vtx1, vtx2xyz1_ini) =
-            del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 48, 8, 48);
+            del_msh_cpu::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 48, 8, 48);
         let vtx2rot1 = {
             let mut vtx2rot1 = vec![0f64; vtx2xyz1_ini.len() * 3];
             for i in 0..vtx2xyz1_ini.len() / 3 {
@@ -692,7 +692,7 @@ mod tests {
         );
         //
         let (tri2vtx2, vtx2xyz2_ini) =
-            del_msh_core::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 96, 16, 96);
+            del_msh_cpu::trimesh3_primitive::capsule_yup::<f64>(0.2, 1.6, 96, 16, 96);
         let vtx2rot2 = {
             let mut vtx2rot2 = vec![0f64; vtx2xyz2_ini.len() * 3];
             for i in 0..vtx2xyz2_ini.len() / 3 {
