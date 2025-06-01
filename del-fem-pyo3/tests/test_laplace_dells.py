@@ -3,7 +3,7 @@ import scipy
 import sys
 #
 import del_ls
-from del_msh import TriMesh, PolyLoop
+from del_msh_numpy import TriMesh, PolyLoop
 
 def test_01():
     tri2vtx, vtx2xyz = TriMesh.cylinder(radius=0.3, height=1.8, ndiv_height=32)

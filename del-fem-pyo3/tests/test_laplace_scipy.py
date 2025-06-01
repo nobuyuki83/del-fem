@@ -3,7 +3,7 @@ import scipy
 import sys
 #
 import del_ls
-from del_msh import TriMesh, PolyLoop
+from del_msh_numpy import TriMesh, PolyLoop
 from del_fem import LaplacianMatrix, MassMatrix
 
 def test_01():
