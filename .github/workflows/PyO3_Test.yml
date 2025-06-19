@@ -20,11 +20,11 @@ jobs:
           components: clippy
       - name: Run check
         run: | 
-          cd del-fem-pyo3
+          cd del-fem-numpy
           cargo check
       - name: Run tests
         run: | 
-          cd del-fem-pyo3
+          cd del-fem-numpy
           cargo test
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -32,7 +32,7 @@ jobs:
           python-version: '3.12'
       - name: tests
         run: |
-          cd del-fem-pyo3
+          cd del-fem-numpy
           python3 -m venv venv
           source venv/bin/activate
           echo "VIRTUAL ENV:" $VIRTUAL_ENV
