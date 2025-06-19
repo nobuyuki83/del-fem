@@ -1,4 +1,4 @@
-  import numpy
+import numpy
 import scipy
 import sys
 #
