@@ -4,7 +4,7 @@ from scipy import sparse
 def from_uniform_mesh(
         elem2vtx: numpy.typing.NDArray,
         vtx2xy: numpy.typing.NDArray):
-    from del_msh import TriMesh
+    from del_msh_numpy import TriMesh
     row2idx, idx2col = TriMesh.vtx2vtx(elem2vtx, vtx2xy.shape[0], True)
     idx2val = numpy.zeros(idx2col.shape, dtype=numpy.float32)
     if elem2vtx.shape[1] == 3:

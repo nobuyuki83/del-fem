@@ -6,7 +6,7 @@ def stiffness_matrix_from_uniform_mesh(
         lam, myu,
         tri2vtx: numpy.typing.NDArray,
         vtx2xy: numpy.typing.NDArray):
-    from del_msh.TriMesh import vtx2vtx
+    from del_msh_numpy.TriMesh import vtx2vtx
     row2idx, idx2col = vtx2vtx(tri2vtx, vtx2xy.shape[0], True)
     idx2val = numpy.zeros((idx2col.shape[0], 3, 3), dtype=numpy.float32)
     from del_fem.del_fem import merge_mitc3_to_bsr_for_meshtri2
