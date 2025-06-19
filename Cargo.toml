@@ -51,7 +51,6 @@ del-fem-candle = { path = "del-fem-candle" }
 # for GitHub push
 del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-msh-cpu = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
 del-fem-ls = { path = "del-fem-ls" }
 
 
