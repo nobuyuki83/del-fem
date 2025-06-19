@@ -57,7 +57,7 @@ fn example1() -> anyhow::Result<()> {
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
             let len_ini = del_geo_core::edge2::length(&p0_ini, &p1_ini);
-            let (dp0, dp1) = del_fem_core::spring2::pbd(&p0_def, &p1_def, len_ini, w0, w1);
+            let (dp0, dp1) = del_fem_cpu::spring2::pbd(&p0_def, &p1_def, len_ini, w0, w1);
             pnt2xy_new[ip0 * 2 + 0] += dp0[0];
             pnt2xy_new[ip0 * 2 + 1] += dp0[1];
             pnt2xy_new[ip1 * 2 + 0] += dp1[0];
@@ -131,7 +131,7 @@ fn example2() -> anyhow::Result<()> {
             let p1_def = arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2);
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
-            let (dp0, dp1) = del_fem_core::spring2::pbd(&p0_def, &p1_def, len_edge, w0, w1);
+            let (dp0, dp1) = del_fem_cpu::spring2::pbd(&p0_def, &p1_def, len_edge, w0, w1);
             pnt2xy_new[ip0 * 2 + 0] += dp0[0];
             pnt2xy_new[ip0 * 2 + 1] += dp0[1];
             pnt2xy_new[ip1 * 2 + 0] += dp1[0];
@@ -148,7 +148,7 @@ fn example2() -> anyhow::Result<()> {
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
             let w2 = pnt2massinv[ip2];
-            let dp = del_fem_core::rod2::pbd(&p0_def, &p1_def, p2_def, &[w0, w1, w2], 0f32);
+            let dp = del_fem_cpu::rod2::pbd(&p0_def, &p1_def, p2_def, &[w0, w1, w2], 0f32);
             //
             let damp = 0.7;
             pnt2xy_new[ip0 * 2 + 0] += damp * dp[0][0];
@@ -233,7 +233,7 @@ fn example3() -> anyhow::Result<()> {
         pnt2massinv
     };
     // rigid body attached to the tip
-    let mut rb = del_fem_core::pbd_rigidbody2::RigidBody {
+    let mut rb = del_fem_cpu::pbd_rigidbody2::RigidBody {
         vtx2xy: vec![-0.1, -0.1, 0.1, -0.1, 0.1, 0.1, -0.1, 0.1],
         pos_cg_ref: [0.0, 0.0],
         pos_cg_def: [0.0, 0.0],
@@ -281,7 +281,7 @@ fn example3() -> anyhow::Result<()> {
         for i_seg in 0..num_pnt - 1 {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
-            let (dp0, dp1) = del_fem_core::spring2::pbd(
+            let (dp0, dp1) = del_fem_cpu::spring2::pbd(
                 arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2),
                 arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2),
                 len_edge,
@@ -296,7 +296,7 @@ fn example3() -> anyhow::Result<()> {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
             let ip2 = i_seg + 2;
-            let dp = del_fem_core::rod2::pbd(
+            let dp = del_fem_cpu::rod2::pbd(
                 arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2),
                 arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2),
                 arrayref::array_ref!(pnt2xy_new, ip2 * 2, 2),
@@ -314,7 +314,7 @@ fn example3() -> anyhow::Result<()> {
             let i_pnt = pnt2xy_new.len() / 2 - 1;
             let p0 = arrayref::array_mut_ref!(pnt2xy_new, i_pnt * 2, 2);
             let damp = 1.0;
-            del_fem_core::pbd_rigidbody2::attach(
+            del_fem_cpu::pbd_rigidbody2::attach(
                 &mut rb,
                 &pos_attach,
                 p0,

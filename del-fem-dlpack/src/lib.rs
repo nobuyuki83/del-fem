@@ -53,7 +53,7 @@ fn solve(
             dlpack::device_type_codes::GPU => {
                 println!("GPU_{}", vtx2idx.ctx.device_id);
                 let (function, _module) = del_cudarc_sys::load_function_in_module(
-                    del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
+                    del_fem_cuda_kernel::LAPLACIAN_SMOOTHING_JACOBI,
                     "laplacian_smoothing_jacobi",
                 );
                 let stream = del_cudarc_sys::create_stream_in_current_context();

@@ -13,6 +13,6 @@ pyo3.workspace = true
 numpy.workspace = true
 arrayref = {workspace = true}
 #
-del-fem-core = {workspace = true}
+del-fem-cpu = {workspace = true}
 del-geo-core = {workspace = true}
 del-msh-cpu = {workspace = true}

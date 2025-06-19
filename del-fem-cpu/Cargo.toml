@@ -1,5 +1,5 @@
 [package]
-name = "del-fem-core"
+name = "del-fem-cpu"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem-core"
 version.workspace = true

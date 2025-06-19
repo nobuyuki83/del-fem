@@ -19,7 +19,7 @@ pub fn solve(
     let func = del_cudarc_safe::get_or_load_func(
         &stream.context(),
         "laplacian_smoothing_jacobi",
-        del_fem_cudarc_kernel::LAPLACIAN_SMOOTHING_JACOBI,
+        del_fem_cuda_kernel::LAPLACIAN_SMOOTHING_JACOBI,
     )?;
     let mut builder = stream.launch_builder(&func);
     builder.arg(&num_vtx);

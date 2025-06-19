@@ -53,7 +53,7 @@ pub fn merge_hessian_mesh_laplacian_on_trimesh3<'a>(
         let v1 = arrayref::array_ref!(vtx2xyz, i1 * 3, 3);
         let v2 = arrayref::array_ref!(vtx2xyz, i2 * 3, 3);
         let emat = del_geo_core::tri3::emat_cotangent_laplacian(v0, v1, v2);
-        del_fem_core::merge::csrdia(
+        del_fem_cpu::merge::csrdia(
             node2vtx,
             node2vtx,
             &emat,
@@ -97,7 +97,7 @@ pub fn optimal_rotations_arap_spoke<'a>(
     for i_vtx in 0..num_vtx {
         let adj2vtx = &idx2col[vtx2idx[i_vtx]..vtx2idx[i_vtx + 1]];
         let adj2weight = &idx2val[vtx2idx[i_vtx]..vtx2idx[i_vtx + 1]];
-        let rot = del_fem_core::arap::optimal_rotation_for_arap_spoke(
+        let rot = del_fem_cpu::arap::optimal_rotation_for_arap_spoke(
             i_vtx,
             adj2vtx,
             vtx2xyz_ini,
@@ -189,7 +189,7 @@ pub fn optimal_rotations_arap_spoke_rim_trimesh3<'a>(
     let vtx2xyz_ini = vtx2xyz_ini.as_slice().unwrap();
     let vtx2xyz_def = vtx2xyz_def.as_slice().unwrap();
     let vtx2rot = vtx2rot.as_slice_mut().unwrap();
-    del_fem_core::arap::optimal_rotations_mesh_vertx_for_arap_spoke_rim(
+    del_fem_cpu::arap::optimal_rotations_mesh_vertx_for_arap_spoke_rim(
         vtx2rot,
         tri2vtx,
         vtx2xyz_ini,
@@ -223,7 +223,7 @@ pub fn residual_arap_spoke_rim_trimesh3<'a>(
     let vtx2xyz_def = vtx2xyz_def.as_slice().unwrap();
     let vtx2rot = vtx2rot.as_slice().unwrap();
     let vtx2res = vtx2res.as_slice_mut().unwrap();
-    del_fem_core::arap::residual_arap_spoke_rim(
+    del_fem_cpu::arap::residual_arap_spoke_rim(
         vtx2res,
         tri2vtx,
         vtx2xyz_ini,

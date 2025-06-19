@@ -1,14 +1,14 @@
 [workspace]
 members = [
-    "del-fem-canvas",
-    "del-fem-core",
-    "del-fem-pyo3",
+    "del-fem-examples",
+    "del-fem-cpu",
+    "del-fem-numpy",
     "del-fem-ls",
     "del-fem-cudarc",
     "del-fem-candle",
     "del-fem-dlpack"
 ]
-exclude = ["del-fem-cudarc-kernel"]
+exclude = ["del-fem-cuda-kernel"]
 resolver = "2"
 
 [workspace.package]
@@ -36,9 +36,9 @@ pyo3 = { version = "0.24.1", features = ["extension-module"] }
 numpy = "0.24.0"
 
 # internal my library
-del-fem-core = { path = "del-fem-core" }
+del-fem-cpu = { path = "del-fem-cpu" }
 del-fem-cudarc = { path = "del-fem-cudarc"}
-del-fem-cudarc-kernel = { path = "del-fem-cudarc-kernel"}
+del-fem-cuda-kernel = { path = "del-fem-cuda-kernel"}
 del-fem-candle = { path = "del-fem-candle" }
 
 # for development

@@ -21,5 +21,5 @@ del-geo-core.workspace = true
 # del-geo-nalgebra.workspace = true
 del-msh-cpu.workspace = true
 del-fem-ls.workspace = true
-del-fem-core.workspace = true
+del-fem-cpu.workspace = true
 del-canvas.workspace = true

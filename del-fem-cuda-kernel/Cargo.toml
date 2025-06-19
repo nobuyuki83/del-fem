@@ -1,5 +1,5 @@
 [package]
-name = "del-fem-cudarc-kernel"
+name = "del-fem-cuda-kernel"
 description = "Cuda PTX for the fem operations"
 publish = true
 license = "MIT"

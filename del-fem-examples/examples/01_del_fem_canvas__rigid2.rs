@@ -1,4 +1,4 @@
-fn step_time(rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody], dt: f32, gravity: &[f32; 2]) {
+fn step_time(rbs: &mut [del_fem_cpu::pbd_rigidbody2::RigidBody], dt: f32, gravity: &[f32; 2]) {
     use del_geo_core::mat3_col_major;
     rbs.iter_mut()
         .for_each(|rb| rb.initialize_pbd_step(dt, gravity));
@@ -25,7 +25,7 @@ fn step_time(rbs: &mut [del_fem_core::pbd_rigidbody2::RigidBody], dt: f32, gravi
                 let nrmj = mat3_col_major::transform_direction(&lclj2world, &nrm);
                 let mut rbi = rbs[irb].clone();
                 let mut rbj = rbs[jrb].clone();
-                let _lambda = del_fem_core::pbd_rigidbody2::resolve_contact(
+                let _lambda = del_fem_cpu::pbd_rigidbody2::resolve_contact(
                     &mut rbi, &mut rbj, -sdf, &xyi_world, &xyi_world, &nrmj,
                 );
                 rbs[irb] = rbi;
@@ -105,7 +105,7 @@ pA,pB,tangent_dir,velo_slip,c.lambda/dt);
 //}
 
 fn main() -> anyhow::Result<()> {
-    use del_fem_core::pbd_rigidbody2::RigidBody;
+    use del_fem_cpu::pbd_rigidbody2::RigidBody;
     let rb0 = RigidBody {
         vtx2xy: vec![
             -1.0, 0.0, 1.0, 0.0, 1.0, 0.8, 0.9, 0.8, 0.9, 0.2, -0.9, 0.2, -0.9, 0.8, -1.0, 0.8,
