@@ -22,6 +22,7 @@ del-geo-core.workspace = true
 del-msh-cpu.workspace = true
 del-fem-ls.workspace = true
 del-fem-cpu.workspace = true
+del-fem-cudarc = { workspace = true, features = ["cuda"]}
 del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
 del-cudarc-safe = { git = "http://github.com/nobuyuki83/del-cudarc" }
 

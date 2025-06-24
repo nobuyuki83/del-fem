@@ -1,0 +1,36 @@
+use cudarc::driver::{CudaSlice, CudaStream, CudaViewMut, PushKernelArg};
+use del_cudarc_safe::cudarc;
+
+pub fn solve(
+    stream: &std::sync::Arc<CudaStream>,
+    pnt2xy_ini: &CudaSlice<f32>,
+    pnt2massinv: &CudaSlice<f32>,
+    num_example: usize,
+    pnt2xy_def: &mut CudaViewMut<f32>,
+    pnt2xy_new: &mut CudaViewMut<f32>,
+    pnt2velo: &mut CudaViewMut<f32>,
+) -> Result<(), cudarc::driver::result::DriverError> {
+    let num_point = pnt2xy_ini.len() / 2;
+    dbg!(pnt2xy_ini.len());
+    assert_eq!(pnt2massinv.len(), num_point);
+    assert_eq!(pnt2xy_def.len(), num_point * 2 * num_example);
+    assert_eq!(pnt2xy_new.len(), num_point * 2 * num_example);
+    assert_eq!(pnt2xy_new.len(), num_point * 2 * num_example);
+    assert_eq!(pnt2velo.len(), num_point * 2 * num_example);
+    let cfg = cudarc::driver::LaunchConfig::for_num_elems(num_example as u32);
+
+    /*
+    void solve(
+        const uint32_t num_example,
+        const uint32_t num_point,
+        const float *pnt2xy_ini,
+        const float *pnt2massinv,
+        float dt,
+        float *gravity,
+        float *example2pnt2xydef,
+        float *example2pnt2xynew,
+        float *example2pnt2velo)
+     */
+
+    Ok(())
+}

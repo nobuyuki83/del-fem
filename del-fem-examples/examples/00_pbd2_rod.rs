@@ -33,8 +33,8 @@ fn example1() -> anyhow::Result<()> {
     let transform_world2pix: [f32; 9] =
         del_geo_core::mat3_col_major::from_transform_ndc2pix((canvas.width, canvas.height));
 
-    let mut pnt2xy_def = pnt2xy_ini.clone();
-    let mut pnt2xy_new = pnt2xy_def.clone();
+    let mut pnt2xydef = pnt2xy_ini.clone();
+    let mut pnt2xynew = pnt2xydef.clone();
     let mut pnt2velo = vec![0f32; pnt2xy_ini.len()];
     for i_step in 0..1000 {
         let num_pnt = pnt2xy_ini.len() / 2;
@@ -42,34 +42,34 @@ fn example1() -> anyhow::Result<()> {
             if pnt2massinv[i_pnt] == 0f32 {
                 continue;
             }
-            pnt2xy_new[i_pnt * 2 + 0] =
-                pnt2xy_def[i_pnt * 2 + 0] + dt * dt * gravity[0] + dt * pnt2velo[i_pnt * 2 + 0];
-            pnt2xy_new[i_pnt * 2 + 1] =
-                pnt2xy_def[i_pnt * 2 + 1] + dt * dt * gravity[1] + dt * pnt2velo[i_pnt * 2 + 1];
+            pnt2xynew[i_pnt * 2 + 0] =
+                pnt2xydef[i_pnt * 2 + 0] + dt * dt * gravity[0] + dt * pnt2velo[i_pnt * 2 + 0];
+            pnt2xynew[i_pnt * 2 + 1] =
+                pnt2xydef[i_pnt * 2 + 1] + dt * dt * gravity[1] + dt * pnt2velo[i_pnt * 2 + 1];
         }
         for i_seg in 0..num_pnt - 1 {
             let ip0 = i_seg;
             let ip1 = i_seg + 1;
-            let p0_def = arrayref::array_ref!(pnt2xy_new, ip0 * 2, 2);
-            let p1_def = arrayref::array_ref!(pnt2xy_new, ip1 * 2, 2);
+            let p0_def = arrayref::array_ref!(pnt2xynew, ip0 * 2, 2);
+            let p1_def = arrayref::array_ref!(pnt2xynew, ip1 * 2, 2);
             let p0_ini = arrayref::array_ref!(pnt2xy_ini, ip0 * 2, 2);
             let p1_ini = arrayref::array_ref!(pnt2xy_ini, ip1 * 2, 2);
             let w0 = pnt2massinv[ip0];
             let w1 = pnt2massinv[ip1];
             let len_ini = del_geo_core::edge2::length(&p0_ini, &p1_ini);
             let (dp0, dp1) = del_fem_cpu::spring2::pbd(&p0_def, &p1_def, len_ini, w0, w1);
-            pnt2xy_new[ip0 * 2 + 0] += dp0[0];
-            pnt2xy_new[ip0 * 2 + 1] += dp0[1];
-            pnt2xy_new[ip1 * 2 + 0] += dp1[0];
-            pnt2xy_new[ip1 * 2 + 1] += dp1[1];
+            pnt2xynew[ip0 * 2 + 0] += dp0[0];
+            pnt2xynew[ip0 * 2 + 1] += dp0[1];
+            pnt2xynew[ip1 * 2 + 0] += dp1[0];
+            pnt2xynew[ip1 * 2 + 1] += dp1[1];
         }
         for i in 0..pnt2xy_ini.len() {
-            pnt2velo[i] = (pnt2xy_new[i] - pnt2xy_def[i]) / dt;
-            pnt2xy_def[i] = pnt2xy_new[i];
+            pnt2velo[i] = (pnt2xynew[i] - pnt2xydef[i]) / dt;
+            pnt2xydef[i] = pnt2xynew[i];
         }
         if i_step % 10 == 0 {
             canvas.clear(0);
-            for p in pnt2xy_def.chunks(2) {
+            for p in pnt2xydef.chunks(2) {
                 del_canvas::rasterize::circle2::fill::<f32, u8>(
                     &mut canvas.data,
                     canvas.width,

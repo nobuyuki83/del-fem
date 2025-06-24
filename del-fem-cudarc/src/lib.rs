@@ -2,6 +2,9 @@
 pub mod laplacian_smoothing_jacobi;
 
 #[cfg(feature = "cuda")]
+pub mod rod2;
+
+#[cfg(feature = "cuda")]
 use del_cudarc_safe::cudarc;
 
 /*

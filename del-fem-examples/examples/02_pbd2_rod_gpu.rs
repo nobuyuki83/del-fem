@@ -1,6 +1,6 @@
-use del_cudarc_safe::cudarc as cudarc;
 use crate::cudarc::driver::CudaSlice;
-fn main() -> anyhow::Result<()>{
+use del_cudarc_safe::cudarc;
+fn main() -> anyhow::Result<()> {
     let gravity = [0., -10.];
     let dt = 0.01;
     let pnt2xy_ini = {
@@ -25,10 +25,22 @@ fn main() -> anyhow::Result<()>{
     let ctx = cudarc::driver::CudaContext::new(0)?;
     let stream = ctx.default_stream();
     let num_example = 10;
-    let pnt2xy_ini_gpu = stream.memcpy_stod(&pnt2massinv)?;
+    let pnt2xyini_gpu = stream.memcpy_stod(&pnt2xy_ini)?;
     let pnt2massinv_gpu = stream.memcpy_stod(&pnt2massinv)?;
-    let mut pnt2xy_def: CudaSlice<f32> = unsafe { stream.alloc(pnt2xy_ini.len() * num_example)? };
-    let mut pnt2xy_new: CudaSlice<f32> = unsafe { stream.alloc(pnt2xy_ini.len() * num_example)? };
-    let mut pnt2velo: CudaSlice<f32> = stream.alloc_zeros(pnt2xy_ini.len() * num_example)?;
+    let mut example2pnt2xydef_gpu: CudaSlice<f32> =
+        unsafe { stream.alloc(pnt2xy_ini.len() * num_example)? };
+    let mut example2pnt2xynew_gpu: CudaSlice<f32> =
+        unsafe { stream.alloc(pnt2xy_ini.len() * num_example)? };
+    let mut example2pnt2velo_gpu: CudaSlice<f32> =
+        stream.alloc_zeros(pnt2xy_ini.len() * num_example)?;
+    del_fem_cudarc::rod2::solve(
+        &stream,
+        &pnt2xyini_gpu,
+        &pnt2massinv_gpu,
+        num_example,
+        &mut example2pnt2xydef_gpu.as_view_mut(),
+        &mut example2pnt2xynew_gpu.as_view_mut(),
+        &mut example2pnt2velo_gpu.as_view_mut(),
+    )?;
     Ok(())
 }

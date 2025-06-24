@@ -223,11 +223,5 @@ pub fn residual_arap_spoke_rim_trimesh3<'a>(
     let vtx2xyz_def = vtx2xyz_def.as_slice().unwrap();
     let vtx2rot = vtx2rot.as_slice().unwrap();
     let vtx2res = vtx2res.as_slice_mut().unwrap();
-    del_fem_cpu::arap::residual_arap_spoke_rim(
-        vtx2res,
-        tri2vtx,
-        vtx2xyz_ini,
-        vtx2xyz_def,
-        vtx2rot,
-    );
+    del_fem_cpu::arap::residual_arap_spoke_rim(vtx2res, tri2vtx, vtx2xyz_ini, vtx2xyz_def, vtx2rot);
 }

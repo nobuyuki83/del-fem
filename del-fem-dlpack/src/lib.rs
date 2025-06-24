@@ -40,51 +40,56 @@ fn solve(
     dbg!(num_vtx, num_dim);
 
     // DLPack を unsafe にアンラップ
-    unsafe {
-        match vtx2idx.ctx.device_type {
-            dlpack::device_type_codes::CPU => {
-                /*
-                let data_ptr = tensor.data as *mut u32;
-                let data = std::slice::from_raw_parts_mut(data_ptr, total_elements);
-                data.iter_mut().enumerate().for_each(|(i, v)| *v = i as u32);
-                 */
-            }
-            #[cfg(feature = "cuda")]
-            dlpack::device_type_codes::GPU => {
-                println!("GPU_{}", vtx2idx.ctx.device_id);
-                let (function, _module) = del_cudarc_sys::load_function_in_module(
-                    del_fem_cuda_kernel::LAPLACIAN_SMOOTHING_JACOBI,
-                    "laplacian_smoothing_jacobi",
-                );
-                let stream = del_cudarc_sys::create_stream_in_current_context();
-                for _itr in 0..20 {
-                    {
-                        let mut builder = del_cudarc_sys::Builder::new(stream);
-                        builder.arg_i32(num_vtx as i32);
-                        builder.arg_data(&vtx2idx.data);
-                        builder.arg_data(&idx2vtx.data);
-                        builder.arg_f32(lambda);
-                        builder.arg_data(&vtx2xyz_tmp.data);
-                        builder.arg_data(&vtx2xyz.data);
-                        builder.arg_data(&rhs.data);
-                        builder.launch_kernel(function, num_vtx as u32);
-                    }
-                    {
-                        let mut builder = del_cudarc_sys::Builder::new(stream);
-                        builder.arg_i32(num_vtx as i32);
-                        builder.arg_data(&vtx2idx.data);
-                        builder.arg_data(&idx2vtx.data);
-                        builder.arg_f32(lambda);
-                        builder.arg_data(&vtx2xyz.data);
-                        builder.arg_data(&vtx2xyz_tmp.data);
-                        builder.arg_data(&rhs.data);
+
+    match vtx2idx.ctx.device_type {
+        dlpack::device_type_codes::CPU => {
+            /*
+            let data_ptr = tensor.data as *mut u32;
+            let data = std::slice::from_raw_parts_mut(data_ptr, total_elements);
+            data.iter_mut().enumerate().for_each(|(i, v)| *v = i as u32);
+             */
+        }
+        #[cfg(feature = "cuda")]
+        dlpack::device_type_codes::GPU => {
+            println!("GPU_{}", vtx2idx.ctx.device_id);
+            let (function, _module) = del_cudarc_sys::load_function_in_module(
+                del_fem_cuda_kernel::LAPLACIAN_SMOOTHING_JACOBI,
+                "laplacian_smoothing_jacobi",
+            );
+            let stream = del_cudarc_sys::create_stream_in_current_context();
+            for _itr in 0..20 {
+                {
+                    let mut builder = del_cudarc_sys::Builder::new(stream);
+                    builder.arg_i32(num_vtx as i32);
+                    builder.arg_data(&vtx2idx.data);
+                    builder.arg_data(&idx2vtx.data);
+                    builder.arg_f32(lambda);
+                    builder.arg_data(&vtx2xyz_tmp.data);
+                    builder.arg_data(&vtx2xyz.data);
+                    builder.arg_data(&rhs.data);
+                    unsafe {
                         builder.launch_kernel(function, num_vtx as u32);
                     }
                 }
+                {
+                    let mut builder = del_cudarc_sys::Builder::new(stream);
+                    builder.arg_i32(num_vtx as i32);
+                    builder.arg_data(&vtx2idx.data);
+                    builder.arg_data(&idx2vtx.data);
+                    builder.arg_f32(lambda);
+                    builder.arg_data(&vtx2xyz.data);
+                    builder.arg_data(&vtx2xyz_tmp.data);
+                    builder.arg_data(&rhs.data);
+                    unsafe {
+                        builder.launch_kernel(function, num_vtx as u32);
+                    }
+                }
+            }
+            unsafe {
                 del_cudarc_sys::cuStreamDestroy_v2(stream);
             }
-            _ => println!("Unknown device type {}", vtx2idx.ctx.device_type),
         }
+        _ => println!("Unknown device type {}", vtx2idx.ctx.device_type),
     }
     Ok(())
 }
