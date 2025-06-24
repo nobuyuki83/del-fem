@@ -1,4 +1,5 @@
 use del_geo_core::vec2;
+use std::time::Instant;
 
 fn example1() -> anyhow::Result<()> {
     // constant value during simulation
@@ -36,6 +37,8 @@ fn example1() -> anyhow::Result<()> {
     let mut pnt2xydef = pnt2xy_ini.clone();
     let mut pnt2xynew = pnt2xydef.clone();
     let mut pnt2velo = vec![0f32; pnt2xy_ini.len()];
+    //let now = Instant::now();
+    //for i_iter in 0..10000 {
     for i_step in 0..1000 {
         let num_pnt = pnt2xy_ini.len() / 2;
         for i_pnt in 0..num_pnt {
@@ -82,6 +85,8 @@ fn example1() -> anyhow::Result<()> {
             canvas.write();
         }
     }
+    //}
+    //dbg!(now.elapsed());
     Ok(())
 }
 
@@ -409,7 +414,7 @@ fn example3() -> anyhow::Result<()> {
                 rb.pos_cg_tmp[1] -= damp * lambda * u_pq_world[1] / rb.mass;
                 rb.theta_tmp -= damp * lambda * dtheta0 / rb.moment_of_inertia;
                 // dbg!(lambda, u_pq_world, rb.theta_tmp, penetration, pnt2massinv[i_pnt]);
-                println!("{} {} {}", i_step, i_pnt, penetration);
+                // println!("{} {} {}", i_step, i_pnt, penetration);
             }
         }
         // ------------

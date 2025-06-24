@@ -11,7 +11,7 @@ __global__
 void solve(
     const uint32_t num_example,
     const uint32_t num_point,
-    const float *pnt2xy_ini,
+    const float *pnt2xyini,
     const float *pnt2massinv,
     float dt,
     float *gravity,
@@ -25,6 +25,12 @@ void solve(
     float* pnt2xydef = example2pnt2xydef + i_example * num_point * 2;
     float* pnt2xynew = example2pnt2xynew + i_example * num_point * 2;
     float* pnt2velo = example2pnt2velo + i_example * num_point * 2;
+    for(int i_point=0;i_point<num_point;++i_point) {
+      pnt2xydef[i_point*2+0] = pnt2xyini[i_point*2+0];
+      pnt2xydef[i_point*2+1] = pnt2xyini[i_point*2+1];
+      pnt2velo[i_point*2+0] = 0.f;
+      pnt2velo[i_point*2+1] = 0.f;
+    }
     for(int i_step = 0; i_step<1000; ++i_step) {
         for(int i_point = 0; i_point < num_point; ++i_point) {
             if( pnt2massinv[i_point] == 0.f ){
@@ -40,8 +46,8 @@ void solve(
             int ip1 = i_seg + 1;
             const float* p0_def = pnt2xynew + ip0 * 2;
             const float* p1_def = pnt2xynew + ip1 * 2;
-            const float* p0_ini = pnt2xy_ini + ip0 * 2;
-            const float* p1_ini = pnt2xy_ini + ip1 * 2;
+            const float* p0_ini = pnt2xyini + ip0 * 2;
+            const float* p1_ini = pnt2xyini + ip1 * 2;
             const float w0 = pnt2massinv[ip0];
             const float w1 = pnt2massinv[ip1];
             const float len_ini = edge2::length(p0_ini, p1_ini);
