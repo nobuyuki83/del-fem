@@ -37,19 +37,5 @@ pub fn solve(
     builder.arg(example2pnt2xynew);
     builder.arg(example2pnt2velo);
     unsafe { builder.launch(cfg)? };
-
-    /*
-    void solve(
-        const uint32_t num_example,
-        const uint32_t num_point,
-        const float *pnt2xy_ini,
-        const float *pnt2massinv,
-        float dt,
-        float *gravity,
-        float *example2pnt2xydef,
-        float *example2pnt2xynew,
-        float *example2pnt2velo);
-     */
-
     Ok(())
 }

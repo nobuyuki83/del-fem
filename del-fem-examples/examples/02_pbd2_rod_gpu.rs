@@ -1,5 +1,11 @@
+
+#[cfg(feature = "cuda")]
 use crate::cudarc::driver::CudaSlice;
+
+#[cfg(feature = "cuda")]
 use del_cudarc_safe::cudarc;
+
+#[cfg(feature = "cuda")]
 fn main() -> anyhow::Result<()> {
     let gravity = [0., -10.];
     let dt = 0.01;
@@ -59,4 +65,10 @@ fn main() -> anyhow::Result<()> {
     }
      */
     Ok(())
+}
+
+
+#[cfg(not(feature = "cuda"))]
+fn main() {
+    println!("this example need the cuda features as \"--features cuda\"");
 }

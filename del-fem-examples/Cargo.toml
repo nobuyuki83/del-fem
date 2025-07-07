@@ -8,21 +8,30 @@ repository.workspace = true
 license.workspace = true
 authors.workspace = true
 
+[features]
+cuda = ["del-fem-cudarc/cuda", "del-cudarc-safe"]
+
 [dependencies]
-num-traits.workspace = true
-nalgebra.workspace = true
-itertools.workspace = true
+eframe = "0.31.1"
+env_logger = "0.11.8"
+#
 arrayref.workspace = true
 rand_chacha.workspace = true
 rand.workspace = true
 anyhow.workspace = true
-#
 del-geo-core.workspace = true
-# del-geo-nalgebra.workspace = true
 del-msh-cpu.workspace = true
-del-fem-ls.workspace = true
 del-fem-cpu.workspace = true
-del-fem-cudarc = { workspace = true, features = ["cuda"]}
+del-fem-cudarc = { workspace = true, optional=true}
+
+# for develop
+del-glow = {path = "../../del-glow"}
+
+# for push
 del-canvas = { git = "https://github.com/nobuyuki83/del-canvas" }
-del-cudarc-safe = { git = "http://github.com/nobuyuki83/del-cudarc" }
+# del-glow = {git = "https://github.com/nobuyuki83/del-glow" }
+del-cudarc-safe = { git = "http://github.com/nobuyuki83/del-cudarc", optional = true}
+
+
+
 
