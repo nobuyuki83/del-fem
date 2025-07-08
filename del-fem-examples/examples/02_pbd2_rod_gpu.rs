@@ -1,4 +1,3 @@
-
 #[cfg(feature = "cuda")]
 use crate::cudarc::driver::CudaSlice;
 
@@ -66,7 +65,6 @@ fn main() -> anyhow::Result<()> {
      */
     Ok(())
 }
-
 
 #[cfg(not(feature = "cuda"))]
 fn main() {
