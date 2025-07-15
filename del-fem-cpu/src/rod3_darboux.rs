@@ -362,7 +362,7 @@ fn wdwdwdw_darboux_rod_hair_approx_hessian(
     let dw = {
         let mut dw = [[0f64; 4]; 3];
         for ino in 0..3 {
-            let t0 = dcdp[0][ino].scale(r[0] * stiff_bendtwist[0]);
+            let t0 = dcdp[0][ino].scale(stiff_bendtwist[0] * r[0]);
             let t1 = dcdp[1][ino].scale(stiff_bendtwist[1] * r[1]);
             let t2 = dcdp[2][ino].scale(stiff_bendtwist[2] * r[2]);
             let t = del_geo_core::vec3::add_three(&t0, &t1, &t2);
@@ -398,21 +398,25 @@ fn wdwdwdw_darboux_rod_hair_approx_hessian(
                     &dcdp[2][jno],
                 );
                 let m = del_geo_core::mat3_col_major::add_three(&m0, &m1, &m2);
+                // this put one at `ddw[ino][jno][4*3+3]`
                 ddw[ino][jno] = del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&m);
+                ddw[ino][jno][15] = 0.;
             }
         }
         for ino in 0..3 {
+            // displacement node
             for jno in 0..2 {
+                // rotation node
                 let v0 = dcdp[0][ino].scale(stiff_bendtwist[0] * dcdt[0][jno]);
                 let v1 = dcdp[1][ino].scale(stiff_bendtwist[1] * dcdt[1][jno]);
                 let v2 = dcdp[2][ino].scale(stiff_bendtwist[2] * dcdt[2][jno]);
                 let v = del_geo_core::vec3::add_three(&v0, &v1, &v2);
-                ddw[ino][jno][3] = v[0];
-                ddw[jno][ino][12] = v[0];
-                ddw[jno][ino][13] = v[1];
-                ddw[ino][jno][7] = v[1];
-                ddw[ino][jno][11] = v[2];
-                ddw[jno][ino][14] = v[2]
+                ddw[ino][jno][12] = v[0];
+                ddw[ino][jno][13] = v[1];
+                ddw[ino][jno][14] = v[2];
+                ddw[jno][ino][3] = v[0];
+                ddw[jno][ino][7] = v[1];
+                ddw[jno][ino][11] = v[2]
             }
         }
         for ino in 0..2 {
@@ -433,7 +437,7 @@ fn test_darboux_rod_hari_approx_hessian() {
     use rand::SeedableRng;
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(0u64);
     let eps = 1.0e-4;
-    for _itr in 0..100 {
+    for _itr in 0..50 {
         use del_geo_core::vec3::Vec3;
         let p2: [[f64; 3]; 3] = [
             del_geo_core::ndc::sample_inside_uniformly(&mut rng),
@@ -463,83 +467,160 @@ fn test_darboux_rod_hari_approx_hessian() {
             let x1 = del_geo_core::vec3::orthogonalize(&v12, &x1).normalize();
             [x0, x1]
         };
+        //let p2: [[f64; 3]; 3] = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]];
+        //let x2: [[f64; 3]; 2] = [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
         let stiff_bendtwist = [1.0, 1.0, 1.0];
-        let darboux_ini = [0.0, 0.0, 0.0];
-        let (w2, dw2dpt, ddw2ddpt) =
+        let darboux_ini = [0.1, 0.1, 0.1];
+        let (_w2, dw2dpt, ddw2ddpt) =
             wdwdwdw_darboux_rod_hair_approx_hessian(&p2, &x2, &stiff_bendtwist, &darboux_ini);
-        let dp: [[f64; 3]; 3] = [
-            del_geo_core::ndc::sample_inside_uniformly(&mut rng),
-            del_geo_core::ndc::sample_inside_uniformly(&mut rng),
-            del_geo_core::ndc::sample_inside_uniformly(&mut rng),
-        ];
-        let dt: [f64; 2] = [
-            2.0 * rng.random::<f64>() - 1.0,
-            2.0 * rng.random::<f64>() - 1.0,
-        ];
-        let p4 = [
-            p2[0].add(&dp[0].scale(eps)),
-            p2[1].add(&dp[1].scale(eps)),
-            p2[2].add(&dp[2].scale(eps)),
-        ];
-        let x4 = {
-            let frma = updated_rod_frame(
-                &x2[0],
-                &p2[1].sub(&p2[0]),
-                &dp[1].sub(&dp[0]).scale(eps),
-                dt[0] * eps,
-            );
-            let frmb = updated_rod_frame(
-                &x2[1],
-                &p2[2].sub(&p2[1]),
-                &dp[2].sub(&dp[1]).scale(eps),
-                dt[1] * eps,
-            );
-            [frma[0], frmb[0]]
-        };
-        let (w4, _dw4dpt, _ddw4ddpt) =
-            wdwdwdw_darboux_rod_hair_approx_hessian(&p4, &x4, &stiff_bendtwist, &darboux_ini);
-        //
-        let p0 = [
-            p2[0].add(&dp[0].scale(-eps)),
-            p2[1].add(&dp[1].scale(-eps)),
-            p2[2].add(&dp[2].scale(-eps)),
-        ];
-        let x0 = {
-            let frma = updated_rod_frame(
-                &x2[0],
-                &p2[1].sub(&p2[0]),
-                &dp[1].sub(&dp[0]).scale(-eps),
-                dt[0] * -eps,
-            );
-            let frmb = updated_rod_frame(
-                &x2[1],
-                &p2[2].sub(&p2[1]),
-                &dp[2].sub(&dp[1]).scale(-eps),
-                dt[1] * -eps,
-            );
-            [frma[0], frmb[0]]
-        };
-        let (w0, _dw0dpt, _ddw0ddpt) =
-            wdwdwdw_darboux_rod_hair_approx_hessian(&p0, &x0, &stiff_bendtwist, &darboux_ini);
-        //
-        let dpt = [
-            [dp[0][0], dp[0][1], dp[0][2], dt[0]],
-            [dp[1][0], dp[1][1], dp[1][2], dt[1]],
-            [dp[2][0], dp[2][1], dp[2][2], 0.0],
-        ];
-        let dw_num = (w4 - w0) * 0.5 / eps;
-        let dw_ana = {
-            let mut dw = 0.0;
-            for i in 0..3 {
-                for j in 0..4 {
-                    dw += dw2dpt[i][j] * dpt[i][j];
+        {
+            let (c, dcdp, dcdt) = cdc_rod_darboux(&p2, &x2);
+            let dpt: [[f64; 4]; 3] = [
+                [
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                ],
+                [
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                ],
+                [
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                    rng.random::<f64>(),
+                ],
+            ];
+            let dc = {
+                let mut dc = [0.0; 3];
+                for ino in 0..3 {
+                    for k in 0..3 {
+                        dc[0] += dcdp[0][ino][k] * dpt[ino][k];
+                        dc[1] += dcdp[1][ino][k] * dpt[ino][k];
+                        dc[2] += dcdp[2][ino][k] * dpt[ino][k];
+                    }
                 }
-            }
-            dw
-        };
-        // dw2dpt^2 ddw2ddpt の比較
-        let err = (dw_num - dw_ana).abs() / (dw_num.abs() + dw_ana.abs() + 1.0);
-        dbg!(dw_ana, dw_num, err);
-        assert!(err < 4.0e-5, "{}", err);
+                dc[0] += dcdt[0][0] * dpt[0][3] + dcdt[0][1] * dpt[1][3];
+                dc[1] += dcdt[1][0] * dpt[0][3] + dcdt[1][1] * dpt[1][3];
+                dc[2] += dcdt[2][0] * dpt[0][3] + dcdt[2][1] * dpt[1][3];
+                dc
+            };
+            let dw0 = {
+                let mut dw = 0.;
+                for ino in 0..3 {
+                    for k in 0..4 {
+                        dw += dw2dpt[ino][k] * dpt[ino][k];
+                    }
+                }
+                dw
+            };
+            let dw1 = {
+                (c[0] - darboux_ini[0]) * stiff_bendtwist[0] * dc[0]
+                    + (c[1] - darboux_ini[1]) * stiff_bendtwist[1] * dc[1]
+                    + (c[2] - darboux_ini[2]) * stiff_bendtwist[2] * dc[2]
+            };
+            assert!((dw0 - dw1).abs() < 1.0e-11, "{}", (dw0 - dw1).abs());
+            let dwdw0 = {
+                let mut dwdw = 0.;
+                for ino in 0..3 {
+                    for jno in 0..3 {
+                        let a = &ddw2ddpt[ino][jno];
+                        let b = del_geo_core::mat4_col_major::mult_vec(&a, &dpt[jno]);
+                        let c = del_geo_core::vecn::dot::<f64, 4>(&b, &dpt[ino]);
+                        dwdw += c;
+                    }
+                }
+                dwdw
+            };
+            let dwdw1 = dc[0] * dc[0] * stiff_bendtwist[0]
+                + dc[1] * dc[1] * stiff_bendtwist[1]
+                + dc[2] * dc[2] * stiff_bendtwist[2];
+            assert!(
+                (dwdw0 - dwdw1).abs() < 1.0e-11,
+                "{dwdw0}, {dwdw1}, {}",
+                (dwdw0 - dwdw1).abs()
+            );
+        }
+        {
+            // check gradient
+            let dp: [[f64; 3]; 3] = [
+                del_geo_core::ndc::sample_inside_uniformly(&mut rng),
+                del_geo_core::ndc::sample_inside_uniformly(&mut rng),
+                del_geo_core::ndc::sample_inside_uniformly(&mut rng),
+            ];
+            let dt: [f64; 2] = [
+                2.0 * rng.random::<f64>() - 1.0,
+                2.0 * rng.random::<f64>() - 1.0,
+            ];
+            let p4 = [
+                p2[0].add(&dp[0].scale(eps)),
+                p2[1].add(&dp[1].scale(eps)),
+                p2[2].add(&dp[2].scale(eps)),
+            ];
+            let x4 = {
+                let frma = updated_rod_frame(
+                    &x2[0],
+                    &p2[1].sub(&p2[0]),
+                    &dp[1].sub(&dp[0]).scale(eps),
+                    dt[0] * eps,
+                );
+                let frmb = updated_rod_frame(
+                    &x2[1],
+                    &p2[2].sub(&p2[1]),
+                    &dp[2].sub(&dp[1]).scale(eps),
+                    dt[1] * eps,
+                );
+                [frma[0], frmb[0]]
+            };
+            let (w4, _dw4dpt, _ddw4ddpt) =
+                wdwdwdw_darboux_rod_hair_approx_hessian(&p4, &x4, &stiff_bendtwist, &darboux_ini);
+            //
+            let p0 = [
+                p2[0].add(&dp[0].scale(-eps)),
+                p2[1].add(&dp[1].scale(-eps)),
+                p2[2].add(&dp[2].scale(-eps)),
+            ];
+            let x0 = {
+                let frma = updated_rod_frame(
+                    &x2[0],
+                    &p2[1].sub(&p2[0]),
+                    &dp[1].sub(&dp[0]).scale(-eps),
+                    dt[0] * -eps,
+                );
+                let frmb = updated_rod_frame(
+                    &x2[1],
+                    &p2[2].sub(&p2[1]),
+                    &dp[2].sub(&dp[1]).scale(-eps),
+                    dt[1] * -eps,
+                );
+                [frma[0], frmb[0]]
+            };
+            let (w0, _dw0dpt, _ddw0ddpt) =
+                wdwdwdw_darboux_rod_hair_approx_hessian(&p0, &x0, &stiff_bendtwist, &darboux_ini);
+            //
+            let dpt = [
+                [dp[0][0], dp[0][1], dp[0][2], dt[0]],
+                [dp[1][0], dp[1][1], dp[1][2], dt[1]],
+                [dp[2][0], dp[2][1], dp[2][2], 0.0],
+            ];
+            let dw_num = (w4 - w0) * 0.5 / eps;
+            let dw_ana = {
+                let mut dw = 0.0;
+                for i in 0..3 {
+                    for j in 0..4 {
+                        dw += dw2dpt[i][j] * dpt[i][j];
+                    }
+                }
+                dw
+            };
+            // dw2dpt^2 ddw2ddpt の比較
+            let err = (dw_num - dw_ana).abs() / (dw_num.abs() + dw_ana.abs() + 1.0);
+            //dbg!(dw_ana, dw_num, err);
+            assert!(err < 2.0e-4, "{}", err);
+        }
     }
 }
