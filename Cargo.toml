@@ -24,6 +24,7 @@ authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
+slice-of-array = "0.3.2"
 num-traits = "0.2.19"
 nalgebra = "0.33.2"
 itertools = "0.14.0"
@@ -43,14 +44,14 @@ del-fem-candle = { path = "del-fem-candle" }
 
 # for development
 # del-fem-ls = { path = "del-fem-ls" }
-# del-geo-core = { path = "../del-geo/del-geo-core" }
+del-geo-core = { path = "../del-geo/del-geo-core" }
 # del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-# del-msh-core = { path = "../del-msh/del-msh-core" }
+del-msh-cpu = { path = "../del-msh/del-msh-cpu" }
 # del-canvas = { path = "../del-canvas" }
 
 # for GitHub push
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-cpu = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-cpu = { git = "https://github.com/nobuyuki83/del-msh.git" }
 del-fem-ls = { path = "del-fem-ls" }
 
 

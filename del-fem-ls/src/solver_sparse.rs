@@ -1,7 +1,7 @@
 use crate::{sparse_ilu, sparse_square};
 use num_traits::AsPrimitive;
 
-/// solve linear system using the Confugate Gradient (CG) method
+/// solve linear system using the Conjugate Gradient (CG) method
 pub fn conjugate_gradient<T>(
     r_vec: &mut [T],
     u_vec: &mut Vec<T>,

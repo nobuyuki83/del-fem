@@ -624,3 +624,58 @@ fn test_darboux_rod_hari_approx_hessian() {
         }
     }
 }
+
+fn make_config_darboux(
+    num_points: usize,
+    elen: f64,
+    rad0: f64,
+    pitch: f64,
+) -> (Vec<f64>, Vec<f64>) {
+    let dangle = {
+        let tmp = pitch / (2.0 * std::f64::consts::PI);
+        let tmp2 = tmp * tmp;
+        let mut dangle = elen / (rad0 * rad0 + tmp2).sqrt();
+        for _itr in 0..10 {
+            let elen0 = (2.0 * rad0 * rad0 * (1.0 - dangle.cos()) + tmp2 * dangle * dangle).sqrt();
+            let df = (rad0 * rad0 * dangle.sin() + dangle * tmp2) / elen0;
+            let f = elen0 - elen;
+            dangle -= f / df;
+        }
+        dangle
+    };
+    let vtx2xyz = {
+        let mut vtx2xyz = vec![];
+        for ip in 0..num_points {
+            let angle = (ip as f64) * dangle;
+            let pos = [
+                pitch * angle / (2.0 * std::f64::consts::PI),
+                rad0 * angle.cos(),
+                rad0 * angle.sin(),
+            ];
+            vtx2xyz.push(pos[0]);
+            vtx2xyz.push(pos[1]);
+            vtx2xyz.push(pos[2]);
+        }
+        vtx2xyz
+    };
+    let vtx2ex = del_msh_cpu::polyline3::vtx2framex(&vtx2xyz);
+    (vtx2xyz, vtx2ex)
+}
+
+#[test]
+fn test_hair() {
+    let (vtx2xyz, vtx2framex) = make_config_darboux(30, 0.2, 0.2, 0.5);
+    {
+        del_msh_cpu::io_obj::save_vtx2xyz_as_polyline("../target/hair.obj", &vtx2xyz, 3).unwrap();
+        let (tril2vtxl, vtxl2xyz) =
+            del_msh_cpu::polyline3::to_trimesh3_ribbon(&vtx2xyz, &vtx2framex, 0.1);
+        del_msh_cpu::io_obj::save_tri2vtx_vtx2xyz(
+            "../target/hair_ribbon.obj",
+            &tril2vtxl,
+            &vtxl2xyz,
+            3,
+        )
+        .unwrap();
+    }
+    let (_vtx2idx, _idx2vtx) = del_msh_cpu::polyline::vtx2vtx_rods(&[0, vtx2xyz.len() / 3]);
+}
