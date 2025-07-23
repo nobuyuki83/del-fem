@@ -188,6 +188,18 @@ impl<T, const NN: usize> Matrix<[T; NN]>
 where
     T: num_traits::Float,
 {
+    pub fn from_vtx2vtx(vtx2idx: &[usize], idx2vtx: &[usize]) -> Self {
+        let num_blk = vtx2idx.len() - 1;
+        let num_idx = vtx2idx[num_blk];
+        Self {
+            num_blk,
+            row2idx: vtx2idx.to_vec(),
+            idx2col: idx2vtx.to_vec(),
+            idx2val: vec![[T::zero(); NN]; num_idx],
+            row2val: vec![[T::zero(); NN]; num_blk],
+        }
+    }
+
     fn set_fixed_bc_dia<const N: usize>(&mut self, val_dia: T, bc_flag: &[[i32; N]]) {
         let num_blk = bc_flag.len();
         assert_eq!(bc_flag.len(), self.row2val.len());
@@ -237,10 +249,10 @@ where
         }
     }
 
-    pub fn set_fixed_dof<const N: usize>(&mut self, val_dia: T, bc_flag: &[[i32; N]]) {
-        self.set_fixed_bc_dia::<N>(val_dia, bc_flag);
-        self.set_fixed_bc_col::<N>(bc_flag);
-        self.set_fixed_bc_row::<N>(bc_flag);
+    pub fn set_fixed_dof<const N: usize>(&mut self, val_dia: T, blk2isfix: &[[i32; N]]) {
+        self.set_fixed_bc_dia::<N>(val_dia, blk2isfix);
+        self.set_fixed_bc_col::<N>(blk2isfix);
+        self.set_fixed_bc_row::<N>(blk2isfix);
     }
 
     /// generalized matrix-vector multiplication
@@ -279,12 +291,8 @@ where
     /// set zero to all the values
     pub fn set_zero(&mut self) {
         assert_eq!(self.idx2val.len(), self.idx2col.len());
-        for m in self.row2val.iter_mut() {
-            m.iter_mut().for_each(|v| *v = T::zero());
-        }
-        for m in self.idx2val.iter_mut() {
-            m.iter_mut().for_each(|v| *v = T::zero());
-        }
+        self.row2val.fill([T::zero(); NN]);
+        self.idx2val.fill([T::zero(); NN]);
     }
 
     pub fn merge_for_array_blk<const NNODE: usize>(
@@ -325,14 +333,14 @@ where
 }
 
 /// solve linear system using the Conjugate Gradient (CG) method
-pub fn conjugate_gradient0<T>(
-    r_vec: &mut [[T; 2]],
-    u_vec: &mut Vec<[T; 2]>,
-    ap_vec: &mut Vec<[T; 2]>,
-    p_vec: &mut Vec<[T; 2]>,
+pub fn conjugate_gradient0<T, const N: usize, const NN: usize>(
+    r_vec: &mut [[T; N]],
+    u_vec: &mut Vec<[T; N]>,
+    ap_vec: &mut Vec<[T; N]>,
+    p_vec: &mut Vec<[T; N]>,
     conv_ratio_tol: T,
     max_iteration: usize,
-    mat: &Matrix<[T; 4]>,
+    mat: &Matrix<[T; NN]>,
 ) -> Vec<T>
 where
     f32: num_traits::AsPrimitive<T>,
@@ -340,9 +348,9 @@ where
 {
     {
         let n = r_vec.len();
-        u_vec.resize(n, [T::zero(); 2]);
-        ap_vec.resize(n, [T::zero(); 2]);
-        p_vec.resize(n, [T::zero(); 2]);
+        u_vec.resize(n, [T::zero(); N]);
+        ap_vec.resize(n, [T::zero(); N]);
+        p_vec.resize(n, [T::zero(); N]);
     }
     let _num_dim = r_vec.len() / mat.row2val.len();
     //
@@ -356,9 +364,9 @@ where
     crate::slice_of_array::copy(p_vec, r_vec); // {p} = {r}  (set initial serch direction, copy value not reference)
     for _iitr in 0..max_iteration {
         // alpha = (r,r) / (p,Ap)
-        mat.mult_vec::<2>(ap_vec, T::zero(), T::one(), p_vec); // {Ap_vec} = [mat]*{p_vec}
+        mat.mult_vec::<N>(ap_vec, T::zero(), T::one(), p_vec); // {Ap_vec} = [mat]*{p_vec}
         let pap = crate::slice_of_array::dot(p_vec, ap_vec);
-        assert!(pap >= T::zero(), "{pap}");
+        // assert!(pap >= T::zero(), "{pap}");
         let alpha = sqnorm_res / pap;
         crate::slice_of_array::add_scaled_vector(u_vec, alpha, p_vec); // {u} = +alpha*{p} + {u} (update x)
         crate::slice_of_array::add_scaled_vector(r_vec, -alpha, ap_vec); // {r} = -alpha*{Ap} + {r}

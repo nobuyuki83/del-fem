@@ -21,4 +21,5 @@ pub mod solid_linear_tri2;
 pub mod sparse_ilu;
 pub mod sparse_square;
 pub mod spring2;
+pub mod spring3;
 pub mod stvk_tri3;
