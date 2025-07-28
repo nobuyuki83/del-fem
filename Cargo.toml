@@ -44,9 +44,9 @@ del-fem-candle = { path = "del-fem-candle" }
 
 # for development
 # del-fem-ls = { path = "del-fem-ls" }
-#del-geo-core = { path = "../del-geo/del-geo-core" }
+# del-geo-core = { path = "../del-geo/del-geo-core" }
 # del-geo-nalgebra = { path = "../del-geo/del-geo-nalgebra" }
-#del-msh-cpu = { path = "../del-msh/del-msh-cpu" }
+ #del-msh-cpu = { path = "../del-msh/del-msh-cpu" }
 # del-canvas = { path = "../del-canvas" }
 
 # for GitHub push

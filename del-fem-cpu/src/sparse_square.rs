@@ -20,15 +20,6 @@ where
         + std::ops::AddAssign // merge
         + Copy
 {
-    pub fn new() -> Self {
-        Matrix {
-            num_blk: 0,
-            row2idx: vec![0],
-            idx2col: Vec::<usize>::new(),
-            idx2val: Vec::<MAT>::new(),
-            row2val: Vec::<MAT>::new(),
-        }
-    }
 
     pub fn clone(&self) -> Self {
         Matrix {
@@ -188,6 +179,16 @@ impl<T, const NN: usize> Matrix<[T; NN]>
 where
     T: num_traits::Float,
 {
+    pub fn new() -> Self {
+        Matrix {
+            num_blk: 0,
+            row2idx: vec![0],
+            idx2col: Vec::<usize>::new(),
+            idx2val: Vec::<[T; NN]>::new(),
+            row2val: Vec::<[T; NN]>::new(),
+        }
+    }
+
     pub fn from_vtx2vtx(vtx2idx: &[usize], idx2vtx: &[usize]) -> Self {
         let num_blk = vtx2idx.len() - 1;
         let num_idx = vtx2idx[num_blk];
@@ -343,8 +344,7 @@ pub fn conjugate_gradient0<T, const N: usize, const NN: usize>(
     mat: &Matrix<[T; NN]>,
 ) -> Vec<T>
 where
-    f32: num_traits::AsPrimitive<T>,
-    T: 'static + Copy + num_traits::Float + std::fmt::Display + std::fmt::Debug,
+    T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
 {
     {
         let n = r_vec.len();

@@ -40,10 +40,13 @@ where
 /// # Return
 /// * `dfdv` - differentiation of frame w.r.t vertex position (i.e., `frame[2] * len`) )
 ///   * `dfdv[i][j][k]` - differentiation of `frame[i][j]` w.r.t vertex position `v[k]`
-fn rod_frame_gradient(length: f64, frame: &[[f64; 3]; 3]) -> ([[[f64; 3]; 3]; 3], [[f64; 3]; 3]) {
+fn rod_frame_gradient<T>(length: T, frame: &[[T; 3]; 3]) -> ([[[T; 3]; 3]; 3], [[T; 3]; 3])
+where
+    T: num_traits::Float,
+{
     use del_geo_core::mat3_col_major;
     use del_geo_core::mat3_col_major::Mat3ColMajor;
-    let leninv = 1.0 / length;
+    let leninv = T::one() / length;
     let dfdv = [
         mat3_col_major::from_scaled_outer_product(-leninv, &frame[2], &frame[0])
             .to_mat3_array_of_array(),
@@ -55,7 +58,7 @@ fn rod_frame_gradient(length: f64, frame: &[[f64; 3]; 3]) -> ([[[f64; 3]; 3]; 3]
     ];
     use del_geo_core::vec3::Vec3;
     // [z^x, z^y, z^z]
-    let dfdt = [frame[1], frame[0].scale(-1.0), [0f64; 3]];
+    let dfdt = [frame[1], frame[0].scale(-T::one()), [T::zero(); 3]];
     (dfdv, dfdt)
 }
 
@@ -159,22 +162,24 @@ fn test_rod_frame_gradient_and_hessian() {
 
 // add derivative of dot( Frm0[i], Frm1[j] ) with respect to the 3 points and 2 rotations
 // of the rod element
-pub fn add_gradient_of_dot_frame_axis(
-    dvdp: &mut [[f64; 3]; 3],
-    dvdt: &mut [f64; 2],
-    c: f64,
+pub fn add_gradient_of_dot_frame_axis<T>(
+    dvdp: &mut [[T; 3]; 3],
+    dvdt: &mut [T; 2],
+    c: T,
     i0_axis: usize,
-    frma: &[[f64; 3]; 3],
-    dfadp: &[[[f64; 3]; 3]; 3],
-    dfadt: &[[f64; 3]; 3],
+    frma: &[[T; 3]; 3],
+    dfadp: &[[[T; 3]; 3]; 3],
+    dfadt: &[[T; 3]; 3],
     i1_axis: usize,
-    frmb: &[[f64; 3]; 3],
-    dfbdp: &[[[f64; 3]; 3]; 3],
-    dfbdt: &[[f64; 3]; 3],
-) {
+    frmb: &[[T; 3]; 3],
+    dfbdp: &[[[T; 3]; 3]; 3],
+    dfbdt: &[[T; 3]; 3],
+) where
+    T: num_traits::Float,
+{
     use del_geo_core::vec3::Vec3;
-    dvdt[0] += c * frmb[i1_axis].dot(&dfadt[i0_axis]);
-    dvdt[1] += c * frma[i0_axis].dot(&dfbdt[i1_axis]);
+    dvdt[0] = dvdt[0] + c * frmb[i1_axis].dot(&dfadt[i0_axis]);
+    dvdt[1] = dvdt[1] + c * frma[i0_axis].dot(&dfbdt[i1_axis]);
     {
         let tmp0 = frmb[i1_axis]
             .mult_mat3_array_of_array(&dfadp[i0_axis])
@@ -191,7 +196,11 @@ pub fn add_gradient_of_dot_frame_axis(
     }
 }
 
-fn darboux_rod(p: &[[f64; 3]; 3], x: &[[f64; 3]; 2]) -> [f64; 3] {
+fn darboux_rod<T>(p: &[[T; 3]; 3], x: &[[T; 3]; 2]) -> [T; 3]
+where
+    T: num_traits::Float,
+{
+    let one = T::one();
     //assert(fabs(S[0].norm() - 1.0) < 1.0e-5);
     //assert(fabs(S[0].dot((P[1] - P[0]).normalized())) < 1.0e-5);
     //assert(fabs(S[1].norm() - 1.0) < 1.0e-5);
@@ -212,7 +221,7 @@ fn darboux_rod(p: &[[f64; 3]; 3], x: &[[f64; 3]; 2]) -> [f64; 3] {
         let uy = uz.cross(&x[1]);
         ([x[1], uy, uz], len)
     };
-    let s = 1.0 + frma[0].dot(&frmb[0]) + frma[1].dot(&frmb[1]) + frma[2].dot(&frmb[2]);
+    let s = one + frma[0].dot(&frmb[0]) + frma[1].dot(&frmb[1]) + frma[2].dot(&frmb[2]);
     let u = [
         frma[1].dot(&frmb[2]) - frma[2].dot(&frmb[1]),
         frma[2].dot(&frmb[0]) - frma[0].dot(&frmb[2]),
@@ -222,10 +231,15 @@ fn darboux_rod(p: &[[f64; 3]; 3], x: &[[f64; 3]; 2]) -> [f64; 3] {
 }
 
 /// Darboux vector in the reference configuration and its gradient
-pub fn cdc_rod_darboux(
-    p: &[[f64; 3]; 3],
-    x: &[[f64; 3]; 2],
-) -> ([f64; 3], [[[f64; 3]; 3]; 3], [[f64; 2]; 3]) {
+pub fn cdc_rod_darboux<T>(
+    p: &[[T; 3]; 3],
+    x: &[[T; 3]; 2],
+) -> ([T; 3], [[[T; 3]; 3]; 3], [[T; 2]; 3])
+where
+    T: num_traits::Float,
+{
+    let zero = T::zero();
+    let one = T::one();
     use del_geo_core::vec3::Vec3;
     let (frma, lena) = {
         let z = p[1].sub(&p[0]);
@@ -244,44 +258,44 @@ pub fn cdc_rod_darboux(
     //
     let (dfadp, dfadt) = rod_frame_gradient(lena, &frma);
     let (dfbdp, dfbdt) = rod_frame_gradient(lenb, &frmb);
-    let s = 1.0 + frma[0].dot(&frmb[0]) + frma[1].dot(&frmb[1]) + frma[2].dot(&frmb[2]);
+    let s = T::one() + frma[0].dot(&frmb[0]) + frma[1].dot(&frmb[1]) + frma[2].dot(&frmb[2]);
     let (dsdp, dsdt) = {
         // making derivative of Y
-        let mut dsdp = [[0f64; 3]; 3];
-        let mut dsdt = [0f64; 2];
+        let mut dsdp = [[zero; 3]; 3];
+        let mut dsdt = [zero; 2];
         add_gradient_of_dot_frame_axis(
-            &mut dsdp, &mut dsdt, 1., 0, &frma, &dfadp, &dfadt, 0, &frmb, &dfbdp, &dfbdt,
+            &mut dsdp, &mut dsdt, one, 0, &frma, &dfadp, &dfadt, 0, &frmb, &dfbdp, &dfbdt,
         );
         add_gradient_of_dot_frame_axis(
-            &mut dsdp, &mut dsdt, 1., 1, &frma, &dfadp, &dfadt, 1, &frmb, &dfbdp, &dfbdt,
+            &mut dsdp, &mut dsdt, one, 1, &frma, &dfadp, &dfadt, 1, &frmb, &dfbdp, &dfbdt,
         );
         add_gradient_of_dot_frame_axis(
-            &mut dsdp, &mut dsdt, 1., 2, &frma, &dfadp, &dfadt, 2, &frmb, &dfbdp, &dfbdt,
+            &mut dsdp, &mut dsdt, one, 2, &frma, &dfadp, &dfadt, 2, &frmb, &dfbdp, &dfbdt,
         );
         (dsdp, dsdt)
     };
-    let mut c = [0f64; 3];
-    let mut dcdp = [[[0f64; 3]; 3]; 3];
-    let mut dcdt = [[0f64; 2]; 3];
+    let mut c = [zero; 3];
+    let mut dcdp = [[[zero; 3]; 3]; 3];
+    let mut dcdt = [[zero; 2]; 3];
     for iaxis in 0..3 {
         let jaxis = (iaxis + 1) % 3;
         let kaxis = (iaxis + 2) % 3;
         let u = frma[jaxis].dot(&frmb[kaxis]) - frma[kaxis].dot(&frmb[jaxis]);
-        let mut dudp = [[0f64; 3]; 3];
-        let mut dudt = [0.0, 0.0];
+        let mut dudp = [[zero; 3]; 3];
+        let mut dudt = [zero, zero];
         {
             add_gradient_of_dot_frame_axis(
-                &mut dudp, &mut dudt, 1., jaxis, &frma, &dfadp, &dfadt, kaxis, &frmb, &dfbdp,
+                &mut dudp, &mut dudt, one, jaxis, &frma, &dfadp, &dfadt, kaxis, &frmb, &dfbdp,
                 &dfbdt,
             );
             add_gradient_of_dot_frame_axis(
-                &mut dudp, &mut dudt, -1., kaxis, &frma, &dfadp, &dfadt, jaxis, &frmb, &dfbdp,
+                &mut dudp, &mut dudt, -one, kaxis, &frma, &dfadp, &dfadt, jaxis, &frmb, &dfbdp,
                 &dfbdt,
             );
         }
         c[iaxis] = u / s;
         {
-            let t0 = 1.0 / s;
+            let t0 = one / s;
             let t1 = -u / (s * s);
             dcdp[iaxis][0] = dudp[0].scale(t0).add(&dsdp[0].scale(t1));
             dcdp[iaxis][1] = dudp[1].scale(t0).add(&dsdp[1].scale(t1));
@@ -396,21 +410,27 @@ fn test_dot_rod_frame_gradient_and_hessian() {
     }
 }
 
-fn wdwdwdw_darboux_rod_hair_approx_hessian(
-    p: &[[f64; 3]; 3],
-    x: &[[f64; 3]; 2],
-    stiff_bendtwist: &[f64; 3],
-    darboux0: &[f64; 3],
-) -> (f64, [[f64; 4]; 3], [[[f64; 16]; 3]; 3]) {
+fn wdwdwdw_darboux_rod_hair_approx_hessian<T>(
+    p: &[[T; 3]; 3],
+    x: &[[T; 3]; 2],
+    stiff_bendtwist: &[T; 3],
+    darboux0: &[T; 3],
+) -> (T, [[T; 4]; 3], [[[T; 16]; 3]; 3])
+where
+    T: num_traits::Float,
+{
+    let zero = T::zero();
+    let one = T::one();
+    let half = one / (one + one);
     use del_geo_core::vec3::Vec3;
     let (c, dcdp, dcdt) = cdc_rod_darboux(p, x);
     let r = [c[0] - darboux0[0], c[1] - darboux0[1], c[2] - darboux0[2]];
-    let w = 0.5
+    let w = half
         * (stiff_bendtwist[0] * r[0] * r[0]
             + stiff_bendtwist[1] * r[1] * r[1]
             + stiff_bendtwist[2] * r[2] * r[2]);
     let dw = {
-        let mut dw = [[0f64; 4]; 3];
+        let mut dw = [[zero; 4]; 3];
         for ino in 0..3 {
             let t0 = dcdp[0][ino].scale(stiff_bendtwist[0] * r[0]);
             let t1 = dcdp[1][ino].scale(stiff_bendtwist[1] * r[1]);
@@ -425,11 +445,11 @@ fn wdwdwdw_darboux_rod_hair_approx_hessian(
                 + stiff_bendtwist[1] * r[1] * dcdt[1][ino]
                 + stiff_bendtwist[2] * r[2] * dcdt[2][ino];
         }
-        dw[2][3] = 0.0;
+        dw[2][3] = zero;
         dw
     };
     let ddw = {
-        let mut ddw = [[[0f64; 16]; 3]; 3];
+        let mut ddw = [[[zero; 16]; 3]; 3];
         for ino in 0..3 {
             for jno in 0..3 {
                 let m0 = del_geo_core::mat3_col_major::from_scaled_outer_product(
@@ -449,8 +469,9 @@ fn wdwdwdw_darboux_rod_hair_approx_hessian(
                 );
                 let m = del_geo_core::mat3_col_major::add_three(&m0, &m1, &m2);
                 // this put one at `ddw[ino][jno][4*3+3]`
-                ddw[ino][jno] = del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&m, 0.0);
-                ddw[ino][jno][15] = 0.;
+                ddw[ino][jno] =
+                    del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&m, zero);
+                ddw[ino][jno][15] = zero;
             }
         }
         for ino in 0..3 {
@@ -675,30 +696,37 @@ fn test_darboux_rod_hari_approx_hessian() {
     }
 }
 
-fn make_config_darboux_helix(
+pub fn make_config_darboux_helix<T>(
     num_points: usize,
-    elen: f64,
-    rad0: f64,
-    pitch: f64,
-) -> (Vec<f64>, Vec<f64>) {
+    elen: T,
+    rad0: T,
+    pitch: T,
+) -> (Vec<T>, Vec<T>)
+where
+    T: num_traits::Float + num_traits::FloatConst + 'static,
+    usize: num_traits::AsPrimitive<T>,
+{
+    use num_traits::AsPrimitive;
+    let one = T::one();
+    let two = one + one;
     let dangle = {
-        let tmp = pitch / (2.0 * std::f64::consts::PI);
+        let tmp = pitch / (two * T::PI());
         let tmp2 = tmp * tmp;
         let mut dangle = elen / (rad0 * rad0 + tmp2).sqrt();
         for _itr in 0..10 {
-            let elen0 = (2.0 * rad0 * rad0 * (1.0 - dangle.cos()) + tmp2 * dangle * dangle).sqrt();
+            let elen0 = (two * rad0 * rad0 * (one - dangle.cos()) + tmp2 * dangle * dangle).sqrt();
             let df = (rad0 * rad0 * dangle.sin() + dangle * tmp2) / elen0;
             let f = elen0 - elen;
-            dangle -= f / df;
+            dangle = dangle - f / df;
         }
         dangle
     };
     let vtx2xyz = {
         let mut vtx2xyz = vec![];
         for ip in 0..num_points {
-            let angle = (ip as f64) * dangle;
+            let angle = ip.as_() * dangle;
             let pos = [
-                pitch * angle / (2.0 * std::f64::consts::PI),
+                pitch * angle / (two * T::PI()),
                 rad0 * angle.cos(),
                 rad0 * angle.sin(),
             ];
@@ -737,11 +765,14 @@ fn make_config_darboux_simple() -> (Vec<f64>, Vec<f64>) {
     (vtx2xyz, vtx2framex)
 }
 
-fn orthonormalize_framex_for_hair(vtx2framex: &mut [f64], vtx2xyz: &[f64]) {
+pub fn orthonormalize_framex_for_hair<T>(vtx2framex: &mut [T], vtx2xyz: &[T])
+where
+    T: num_traits::Float,
+{
     use del_geo_core::vec3::Vec3;
     use slice_of_array::SliceNestExt;
     let vtx2framex = vtx2framex.nest_mut();
-    let vtx2xyz: &[[f64; 3]] = vtx2xyz.nest();
+    let vtx2xyz: &[[T; 3]] = vtx2xyz.nest();
     for i0_vtx in 0..vtx2xyz.len() - 1 {
         let i1_vtx = i0_vtx + 1;
         let p0 = &vtx2xyz[i0_vtx];
@@ -752,19 +783,23 @@ fn orthonormalize_framex_for_hair(vtx2framex: &mut [f64], vtx2xyz: &[f64]) {
     }
 }
 
-fn wdwddw_hair_system(
-    w: &mut f64,
-    dw: &mut [[f64; 4]],
-    ddw: &mut crate::sparse_square::Matrix<[f64; 16]>,
-    vtx2xyz_ini: &[f64],
-    vtx2xyz_def: &[f64],
-    stiff_length: f64,
-    stiff_bendtwist: &[f64; 3],
-    vtx2framex_ini: &[f64],
-    vtx2framex_def: &[f64],
-) {
-    *w = 0.0;
-    dw.fill([0f64; 4]);
+pub fn wdwddw_hair_system<T>(
+    w: &mut T,
+    dw: &mut [[T; 4]],
+    ddw: &mut crate::sparse_square::Matrix<[T; 16]>,
+    vtx2xyz_ini: &[T],
+    vtx2xyz_def: &[T],
+    stiff_length: T,
+    stiff_bendtwist: &[T; 3],
+    vtx2framex_ini: &[T],
+    vtx2framex_def: &[T],
+    diagonal_damp: T,
+) where
+    T: num_traits::Float,
+{
+    let zero = T::zero();
+    *w = zero;
+    dw.fill([zero; 4]);
     ddw.set_zero();
     let num_vtx = vtx2xyz_ini.len() / 3;
     let mut col2idx = vec![usize::MAX; num_vtx];
@@ -782,20 +817,20 @@ fn wdwddw_hair_system(
         ];
         let (w_e, dw_e, ddw_e) =
             crate::spring3::wdwddw_squared_length_difference(stiff_length, &p1, length_ini);
-        *w += w_e;
+        *w = (*w) + w_e;
         {
             use del_geo_core::vec4::Vec4;
-            dw[i0_vtx].add_in_place(&del_geo_core::vec3::to_vec4_adding_w(&dw_e[0], 0.0));
-            dw[i1_vtx].add_in_place(&del_geo_core::vec3::to_vec4_adding_w(&dw_e[1], 0.0));
+            dw[i0_vtx].add_in_place(&del_geo_core::vec3::to_vec4_adding_w(&dw_e[0], zero));
+            dw[i1_vtx].add_in_place(&del_geo_core::vec3::to_vec4_adding_w(&dw_e[1], zero));
         }
         let ddw_e = [
             [
-                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[0][0], 0.0),
-                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[0][1], 0.0),
+                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[0][0], zero),
+                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[0][1], zero),
             ],
             [
-                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[1][0], 0.0),
-                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[1][1], 0.0),
+                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[1][0], zero),
+                del_geo_core::mat4_col_major::from_mat3_col_major_adding_w(&ddw_e[1][1], zero),
             ],
         ];
         ddw.merge_for_array_blk(&ddw_e, &[i0_vtx, i1_vtx], &mut col2idx);
@@ -824,7 +859,7 @@ fn wdwddw_hair_system(
         ];
         let (w_e, dw_e, ddw_e) =
             wdwdwdw_darboux_rod_hair_approx_hessian(&p1, &x1, &stiff_bendtwist, &darboux0);
-        *w += w_e;
+        *w = (*w) + w_e;
         {
             use del_geo_core::vec4::Vec4;
             dw[i0_vtx].add_in_place(&dw_e[0]);
@@ -833,22 +868,22 @@ fn wdwddw_hair_system(
         }
         ddw.merge_for_array_blk(&ddw_e, &[i0_vtx, i1_vtx, i2_vtx], &mut col2idx);
     }
-    let eps = 0.001;
     for i_vtx in 0..num_vtx {
-        ddw.row2val[i_vtx][0] += eps;
-        ddw.row2val[i_vtx][5] += eps;
-        ddw.row2val[i_vtx][10] += eps;
+        ddw.row2val[i_vtx][0] = ddw.row2val[i_vtx][0] + diagonal_damp;
+        ddw.row2val[i_vtx][5] = ddw.row2val[i_vtx][5] + diagonal_damp;
+        ddw.row2val[i_vtx][10] = ddw.row2val[i_vtx][10] + diagonal_damp;
         // ddw.row2val[i_vtx][15] += eps;
     }
 }
 
-fn update_solution_hair(
-    vtx2xyz: &mut [f64],
-    vtx2framex: &mut [f64],
-    vec_x: &[[f64; 4]],
-
+pub fn update_solution_hair<T>(
+    vtx2xyz: &mut [T],
+    vtx2framex: &mut [T],
+    vec_x: &[[T; 4]],
     vtx2isfix: &[[i32; 4]],
-) {
+) where
+    T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
+{
     use del_geo_core::vec3::Vec3;
     let num_vtx = vtx2xyz.len() / 3;
     for i0_vtx in 0..num_vtx - 1 {
@@ -879,7 +914,7 @@ fn update_solution_hair(
             if vtx2isfix[i_vtx][i_dim] != 0 {
                 continue;
             };
-            vtx2xyz[i_vtx * 3 + i_dim] -= vec_x[i_vtx][i_dim];
+            vtx2xyz[i_vtx * 3 + i_dim] = vtx2xyz[i_vtx * 3 + i_dim] - vec_x[i_vtx][i_dim];
         }
     }
 }
@@ -970,6 +1005,7 @@ fn test_hair() {
             &stiff_bendtwist,
             &vtx2framex_ini,
             &vtx2framex_def,
+            0.001,
         );
         // set bc flag
         for i_vtx in 0..num_vtx {
@@ -983,7 +1019,7 @@ fn test_hair() {
         ddw.set_fixed_dof::<4>(1.0, &vtx2isfix);
         dbg!(_iter, w);
         if _iter == 19 {
-            assert!(w<3.0e-6);
+            assert!(w < 3.0e-6);
         }
         //
         {
