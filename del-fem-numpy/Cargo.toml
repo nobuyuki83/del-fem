@@ -9,6 +9,9 @@ name = "del_fem"
 crate-type = ["cdylib"]
 
 [dependencies]
+slice-of-array.workspace = true
+rand_chacha.workspace = true
+rand.workspace = true
 pyo3.workspace = true
 numpy.workspace = true
 arrayref = {workspace = true}

@@ -1,8 +1,6 @@
 import numpy
 import scipy
 import sys
-#
-import del_ls
 from del_msh_numpy import TriMesh, PolyLoop
 from del_fem import LaplacianMatrix, MassMatrix
 
@@ -14,7 +12,7 @@ def test_01():
         [0.6, 0.6],
         [0.6, 1.0],
         [0, 1]], dtype=numpy.float32)
-    ##
+    #
     tri2vtx, vtx2xy = PolyLoop.tesselation2d(
         vtxi2xyi, resolution_edge=0.04, resolution_face=0.04)
     print("# vtx: ", vtx2xy.shape[0])
