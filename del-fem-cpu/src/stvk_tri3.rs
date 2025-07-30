@@ -1,10 +1,12 @@
-/**
- *
- * @param[out] C
- * @param[out] dCdp
- * @param[in] P undeformed triangle vertex positions
- * @param[in] p deformed triangle vertex positions
- */
+
+/// 2D Green-Lagrange strain and its derivative with respect to triangle's corner positions.
+/// # argument
+/// * p_ini - undeformed triangle vertex positions
+/// * p_def - deformed triangle vertex positions
+///
+/// # return
+/// 1. Green-Lagrange strain
+/// 2. Differentiation of Gree-Lagrange strain w.r.t corner positions
 pub fn wdw<Real>(p_ini: &[[Real; 2]; 3], p_def: &[[Real; 3]; 3]) -> ([Real; 3], [[[Real; 3]; 3]; 3])
 where
     Real: num_traits::Float + std::ops::MulAssign,
