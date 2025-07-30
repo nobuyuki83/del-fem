@@ -9,7 +9,7 @@ class Simulator:
         self.vtx2framex_ini = Polyline.vtx2framex_from_vtx2xyz(vtx2xyz_ini)
         self.vtx2xyz_def = self.vtx2xyz_ini.copy()
         self.vtx2framex_def = self.vtx2framex_ini.copy()
-        self.vtx2isfix = numpy.ndarray(shape=(num_vtx,4), dtype=numpy.int32)
+        self.vtx2isfix = numpy.zeros(shape=(num_vtx,4), dtype=numpy.int32)
         self.w = numpy.array(0., dtype=numpy.float32)
         self.dw = numpy.ndarray(shape=(num_vtx,4), dtype=numpy.float32)
         (self.row2idx, self.idx2col) = Polyline.vtx2vtx_rods(numpy.array([0, num_vtx], dtype=numpy.uint64))
@@ -36,6 +36,8 @@ class Simulator:
              framex_mag)
 
     def compute_rod_deformation_energy_grad_hessian(self):
+        self.w.fill(0.)
+        self.dw.fill(0.)
         self.row2val.fill(0.)
         self.idx2val.fill(0.)
         from .del_fem import add_wdwddw_rod3_darboux
