@@ -1,5 +1,3 @@
-use crate::sparse_ilu::{copy_value, decompose};
-
 pub fn add_weighted_emat_2d<T, const NNO: usize>(
     emat: &mut [[[T; 4]; NNO]; NNO],
     lambda: T,
@@ -34,7 +32,7 @@ where
     emat
 }
 
-fn mult_emat_evec(emat: &[[[f64; 4]; 3]; 3], avec: &[[f64; 2]; 3]) -> [[f64; 2]; 3] {
+pub fn mult_emat_evec(emat: &[[[f64; 4]; 3]; 3], avec: &[[f64; 2]; 3]) -> [[f64; 2]; 3] {
     use del_geo_core::mat2_col_major::Mat2ColMajor;
     let mut r = [[0f64; 2]; 3];
     for ino in 0..3 {
@@ -207,6 +205,7 @@ mod tests {
     }
 
     fn solve_and_check(sol_type: SolverType, prob: &Problem) -> (f64, f64, usize) {
+        use crate::sparse_ilu::{copy_value, decompose};
         let num_vtx = prob.vtx2xy_ini.len() / 2;
         let mut r_vec = prob.r_vec.clone();
         // solve linear system
@@ -215,14 +214,14 @@ mod tests {
                 let mut u_vec = vec![[0f64; 2]; num_vtx];
                 let mut p_vec = vec![[0f64; 2]; num_vtx];
                 let mut ap_vec = vec![[0f64; 2]; num_vtx];
-                let hist = crate::sparse_square::conjugate_gradient0(
+                let hist = crate::sparse_square::conjugate_gradient(
                     &mut r_vec,
                     &mut u_vec,
                     &mut ap_vec,
                     &mut p_vec,
                     1.0e-5,
                     100,
-                    &prob.bsm,
+                    prob.bsm.as_ref(),
                 );
                 (u_vec, hist.len())
             }

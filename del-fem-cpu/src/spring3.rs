@@ -20,8 +20,7 @@ where
         let t0 = stiffness * edge_length_ini / (l * l * l);
         let t1 = stiffness * (l - edge_length_ini) / l;
         let t2 = del_geo_core::mat3_col_major::from_identity().scale(t1);
-        let m = mvv.scale(t0).add(&t2);
-        m
+        mvv.scale(t0).add(&t2)
     };
     let ddw = [[m, m.scale(-one)], [m.scale(-one), m]];
     let w = half * stiffness * c * c;

@@ -9,15 +9,18 @@ repository.workspace = true
 
 [dependencies]
 num-traits.workspace = true
-nalgebra.workspace = true
+# nalgebra.workspace = true
 itertools.workspace = true
 arrayref.workspace = true
 slice-of-array.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+#
 del-geo-core.workspace = true
 del-msh-cpu.workspace = true
 
 # for develop/push
-del-fem-ls = {workspace = true}
+# del-fem-ls = {workspace = true}
 
 # for deploy
 # del-fem-ls = "0.1.5"

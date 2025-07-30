@@ -72,7 +72,7 @@ where
     }
 }
 
-struct Mips {}
+pub struct Mips {}
 
 impl<Real> EnergyDensityFromSingularValueOfDefGrad<Real> for Mips
 where
@@ -112,7 +112,7 @@ where
     }
 }
 
-struct Ogden {}
+pub struct Ogden {}
 
 impl<Real> EnergyDensityFromSingularValueOfDefGrad<Real> for Ogden
 where

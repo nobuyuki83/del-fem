@@ -696,51 +696,7 @@ fn test_darboux_rod_hari_approx_hessian() {
     }
 }
 
-pub fn make_config_darboux_helix<T>(
-    num_points: usize,
-    elen: T,
-    rad0: T,
-    pitch: T,
-) -> (Vec<T>, Vec<T>)
-where
-    T: num_traits::Float + num_traits::FloatConst + 'static,
-    usize: num_traits::AsPrimitive<T>,
-{
-    use num_traits::AsPrimitive;
-    let one = T::one();
-    let two = one + one;
-    let dangle = {
-        let tmp = pitch / (two * T::PI());
-        let tmp2 = tmp * tmp;
-        let mut dangle = elen / (rad0 * rad0 + tmp2).sqrt();
-        for _itr in 0..10 {
-            let elen0 = (two * rad0 * rad0 * (one - dangle.cos()) + tmp2 * dangle * dangle).sqrt();
-            let df = (rad0 * rad0 * dangle.sin() + dangle * tmp2) / elen0;
-            let f = elen0 - elen;
-            dangle = dangle - f / df;
-        }
-        dangle
-    };
-    let vtx2xyz = {
-        let mut vtx2xyz = vec![];
-        for ip in 0..num_points {
-            let angle = ip.as_() * dangle;
-            let pos = [
-                pitch * angle / (two * T::PI()),
-                rad0 * angle.cos(),
-                rad0 * angle.sin(),
-            ];
-            vtx2xyz.push(pos[0]);
-            vtx2xyz.push(pos[1]);
-            vtx2xyz.push(pos[2]);
-        }
-        vtx2xyz
-    };
-    let vtx2ex = del_msh_cpu::polyline3::vtx2framex(&vtx2xyz);
-    (vtx2xyz, vtx2ex)
-}
-
-fn make_config_darboux_simple() -> (Vec<f64>, Vec<f64>) {
+pub fn make_config_darboux_simple() -> (Vec<f64>, Vec<f64>) {
     let num_vtx = 30;
     let elen = 0.2;
     let vtx2xyz = {
@@ -786,7 +742,7 @@ where
 pub fn wdwddw_hair_system<T>(
     w: &mut T,
     dw: &mut [[T; 4]],
-    ddw: &mut crate::sparse_square::Matrix<[T; 16]>,
+    mut ddw: crate::sparse_square::MatrixRefMut<T, 16>,
     vtx2xyz_ini: &[T],
     vtx2xyz_def: &[T],
     stiff_length: T,
@@ -919,11 +875,49 @@ pub fn update_solution_hair<T>(
     }
 }
 
+pub fn initialize_with_perturbation<T, Rng>(
+    vtx2xyz_def: &mut [T],
+    vtx2framex_def: &mut [T],
+    vtx2xyz_ini: &[T],
+    vtx2framex_ini: &[T],
+    vtx2isfix: &[[i32; 4]],
+    pos_mag: T,
+    framex_mag: T,
+    mut rng: Rng,
+) where
+    T: num_traits::Float,
+    Rng: rand::Rng,
+    rand::distr::StandardUniform: rand::prelude::Distribution<T>,
+{
+    let one = T::one();
+    let two = one + one;
+
+    let num_vtx = vtx2xyz_ini.len() / 3;
+    vtx2xyz_def.copy_from_slice(&vtx2xyz_ini);
+    vtx2framex_def.copy_from_slice(&vtx2framex_ini);
+    for i_vtx in 0..num_vtx {
+        for i_dim in 0..3 {
+            if vtx2isfix[i_vtx][i_dim] == 0 {
+                vtx2xyz_def[i_vtx * 3 + i_dim] =
+                    vtx2xyz_def[i_vtx * 3 + i_dim] + (two * rng.random::<T>() - one) * pos_mag;
+            }
+        }
+        if vtx2isfix[i_vtx][3] == 0 {
+            let r: [T; 3] = std::array::from_fn(|_v| (two * rng.random::<T>() - one) * framex_mag);
+            vtx2framex_def[i_vtx * 3] = vtx2framex_def[i_vtx * 3] + r[0];
+            vtx2framex_def[i_vtx * 3 + 1] = vtx2framex_def[i_vtx * 3 + 1] + r[1];
+            vtx2framex_def[i_vtx * 3 + 2] = vtx2framex_def[i_vtx * 3 + 2] + r[2];
+        }
+    }
+    orthonormalize_framex_for_hair(vtx2framex_def, &vtx2xyz_def);
+}
+
 #[test]
 fn test_hair() {
     let stiff_length = 1.0;
     let stiff_bendtwist = [1.0, 1.0, 1.0];
-    let (vtx2xyz_ini, vtx2framex_ini) = make_config_darboux_helix(30, 0.2, 0.2, 0.5);
+    let vtx2xyz_ini = del_msh_cpu::polyline3::helix(30, 0.2, 0.2, 0.5);
+    let vtx2framex_ini = del_msh_cpu::polyline3::vtx2framex(&vtx2xyz_ini);
     //let (vtx2xyz_ini, vtx2framex_ini) = make_config_darboux_simple();
     let num_vtx = vtx2xyz_ini.len() / 3;
     {
@@ -994,11 +988,21 @@ fn test_hair() {
         let (vtx2idx, idx2vtx) = del_msh_cpu::polyline::vtx2vtx_rods(&[0, vtx2xyz_ini.len() / 3]);
         crate::sparse_square::Matrix::<[f64; 16]>::from_vtx2vtx(&vtx2idx, &idx2vtx)
     };
+    let mut u_vec = vec![[0f64; 4]; num_vtx];
+    let mut p_vec = vec![[0f64; 4]; num_vtx];
+    let mut ap_vec = vec![[0f64; 4]; num_vtx];
     for _iter in 0..20 {
+        let ddw_ref = crate::sparse_square::MatrixRefMut {
+            num_blk: ddw.num_blk,
+            row2idx: &ddw.row2idx,
+            idx2col: &ddw.idx2col,
+            idx2val: &mut ddw.idx2val,
+            row2val: &mut ddw.row2val,
+        };
         wdwddw_hair_system(
             &mut w,
             &mut dw,
-            &mut ddw,
+            ddw_ref,
             &vtx2xyz_ini,
             &vtx2xyz_def,
             stiff_length,
@@ -1023,17 +1027,14 @@ fn test_hair() {
         }
         //
         {
-            let mut u_vec = vec![[0f64; 4]; num_vtx];
-            let mut p_vec = vec![[0f64; 4]; num_vtx];
-            let mut ap_vec = vec![[0f64; 4]; num_vtx];
-            let _hist = crate::sparse_square::conjugate_gradient0(
+            let _hist = crate::sparse_square::conjugate_gradient(
                 &mut dw,
                 &mut u_vec,
                 &mut ap_vec,
                 &mut p_vec,
                 1.0e-5,
                 1000,
-                &ddw,
+                ddw.as_ref(),
             );
             // dbg!(hist.last().unwrap());
             update_solution_hair(&mut vtx2xyz_def, &mut vtx2framex_def, &u_vec, &vtx2isfix);
@@ -1051,6 +1052,119 @@ fn test_hair() {
                 .unwrap();
             }
              */
+        }
+    }
+}
+
+pub struct RodSimulator<T>
+where
+    T: num_traits::Float,
+{
+    pub vtx2xyz_ini: Vec<T>,
+    pub vtx2framex_ini: Vec<T>,
+    pub vtx2xyz_def: Vec<T>,
+    pub vtx2framex_def: Vec<T>,
+    //
+    pub vtx2isfix: Vec<[i32; 4]>,
+    //
+    pub w: T,
+    pub dw: Vec<[T; 4]>,
+    pub ddw: crate::sparse_square::Matrix<[T; 16]>,
+    pub conv_ratio: T,
+    //
+    pub stiff_length: T,
+    pub stiff_bendtwist: [T; 3],
+}
+
+impl<T> RodSimulator<T>
+where
+    T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
+    rand::distr::StandardUniform: rand::distr::Distribution<T>,
+{
+    pub fn initialize_with_perturbation(&mut self, pos_mag: T, framex_mag: T) {
+        use rand::SeedableRng;
+        let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
+        initialize_with_perturbation(
+            &mut self.vtx2xyz_def,
+            &mut self.vtx2framex_def,
+            &self.vtx2xyz_ini,
+            &self.vtx2framex_ini,
+            &self.vtx2isfix,
+            pos_mag,
+            framex_mag,
+            rng,
+        );
+    }
+
+    pub fn allocate_memory_for_linear_system(&mut self) {
+        let zero = T::zero();
+        let num_vtx = self.vtx2xyz_ini.len() / 3;
+        self.w = zero;
+        self.dw = vec![[zero; 4]; num_vtx];
+        //
+        {
+            let (vtx2idx, idx2vtx) = del_msh_cpu::polyline::vtx2vtx_rods(&[0, num_vtx]);
+            self.ddw = crate::sparse_square::Matrix::<[T; 16]>::from_vtx2vtx(&vtx2idx, &idx2vtx)
+        };
+    }
+
+    pub fn update_static(&mut self, pick_info: &Option<(usize, [T; 3])>) {
+        let zero = T::zero();
+        let one = T::one();
+        let num_vtx = self.vtx2xyz_ini.len() / 3;
+        crate::rod3_darboux::wdwddw_hair_system(
+            &mut self.w,
+            &mut self.dw,
+            self.ddw.as_ref_mut(),
+            &self.vtx2xyz_ini,
+            &self.vtx2xyz_def,
+            self.stiff_length,
+            &self.stiff_bendtwist,
+            &self.vtx2framex_ini,
+            &self.vtx2framex_def,
+            T::zero(),
+        );
+        if let Some((i_vtx, pos_goal)) = pick_info {
+            let i_vtx = *i_vtx;
+            use del_geo_core::mat4_col_major;
+            let one = T::one();
+            let two = one + one;
+            let stiff = two * two * two * two;
+            let kmat = mat4_col_major::from_diagonal(stiff, stiff, stiff, zero);
+            use del_geo_core::mat4_col_major::Mat4ColMajor;
+            self.ddw.row2val[i_vtx].add_in_place(&kmat);
+            let c = del_geo_core::vec3::sub(
+                arrayref::array_ref![self.vtx2xyz_def, i_vtx * 3, 3],
+                pos_goal,
+            );
+            self.dw[i_vtx][0] = self.dw[i_vtx][0] + c[0];
+            self.dw[i_vtx][1] = self.dw[i_vtx][1] + c[1];
+            self.dw[i_vtx][2] = self.dw[i_vtx][2] + c[2];
+        }
+        // set bc flag
+        crate::sparse_square::set_fix_dof_to_rhs_vector::<T, 4>(&mut self.dw, &self.vtx2isfix);
+        self.ddw.set_fixed_dof::<4>(one, &self.vtx2isfix);
+        //
+        {
+            let mut u_vec = vec![[zero; 4]; num_vtx];
+            let mut p_vec = vec![[zero; 4]; num_vtx];
+            let mut ap_vec = vec![[zero; 4]; num_vtx];
+            let _hist = crate::sparse_square::conjugate_gradient(
+                &mut self.dw,
+                &mut u_vec,
+                &mut ap_vec,
+                &mut p_vec,
+                self.conv_ratio,
+                1000,
+                self.ddw.as_ref(),
+            );
+            // dbg!(hist.last().unwrap());
+            update_solution_hair(
+                &mut self.vtx2xyz_def,
+                &mut self.vtx2framex_def,
+                &u_vec,
+                &self.vtx2isfix,
+            );
         }
     }
 }

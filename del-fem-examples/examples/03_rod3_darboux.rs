@@ -5,7 +5,6 @@
 
 use eframe::{egui, egui_glow, glow};
 
-use del_geo_core::vecn::VecN;
 use egui::mutex::Mutex;
 use glow::HasContext;
 use std::sync::Arc;
@@ -26,150 +25,13 @@ fn main() -> eframe::Result {
     )
 }
 
-struct RodSimulator<T>
-where
-    T: num_traits::Float,
-{
-    vtx2xyz_ini: Vec<T>,
-    vtx2framex_ini: Vec<T>,
-    vtx2xyz_def: Vec<T>,
-    vtx2framex_def: Vec<T>,
-    //
-    vtx2isfix: Vec<[i32; 4]>,
-    //
-    w: T,
-    dw: Vec<[T; 4]>,
-    ddw: del_fem_cpu::sparse_square::Matrix<[T; 16]>,
-    conv_ratio: T,
-    //
-    stiff_length: T,
-    stiff_bendtwist: [T; 3],
-}
-
-impl<T> RodSimulator<T>
-where
-    T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
-    rand::distr::StandardUniform: rand::distr::Distribution<T>,
-{
-    fn initialize_with_perturbation(&mut self, pos_mag: T, framex_mag: T) {
-        use rand::Rng;
-        use rand::SeedableRng;
-        let one = T::one();
-        let two = one + one;
-
-        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-        self.vtx2xyz_def = self.vtx2xyz_ini.clone();
-        self.vtx2framex_def = self.vtx2framex_ini.clone();
-        let num_vtx = self.vtx2xyz_ini.len() / 3;
-        for i_vtx in 0..num_vtx {
-            for i_dim in 0..3 {
-                if self.vtx2isfix[i_vtx][i_dim] == 0 {
-                    self.vtx2xyz_def[i_vtx * 3 + i_dim] = self.vtx2xyz_def[i_vtx * 3 + i_dim]
-                        + (two * rng.random::<T>() - one) * pos_mag;
-                }
-            }
-            if self.vtx2isfix[i_vtx][3] == 0 {
-                let r: [T; 3] =
-                    std::array::from_fn(|_v| (two * rng.random::<T>() - one) * framex_mag);
-                self.vtx2framex_def[i_vtx * 3] = self.vtx2framex_def[i_vtx * 3] + r[0];
-                self.vtx2framex_def[i_vtx * 3 + 1] = self.vtx2framex_def[i_vtx * 3 + 1] + r[1];
-                self.vtx2framex_def[i_vtx * 3 + 2] = self.vtx2framex_def[i_vtx * 3 + 2] + r[2];
-            }
-        }
-        del_fem_cpu::rod3_darboux::orthonormalize_framex_for_hair(
-            &mut self.vtx2framex_def,
-            &self.vtx2xyz_def,
-        );
-    }
-
-    fn allocate_memory_for_linear_system(&mut self) {
-        let zero = T::zero();
-        let num_vtx = self.vtx2xyz_ini.len() / 3;
-        self.w = zero;
-        self.dw = vec![[zero; 4]; num_vtx];
-        //
-        {
-            let (vtx2idx, idx2vtx) = del_msh_cpu::polyline::vtx2vtx_rods(&[0, num_vtx]);
-            self.ddw =
-                del_fem_cpu::sparse_square::Matrix::<[T; 16]>::from_vtx2vtx(&vtx2idx, &idx2vtx)
-        };
-    }
-
-    fn update_static(&mut self, pick_info: &Option<(usize, [T; 3])>) {
-        let zero = T::zero();
-        let one = T::one();
-        let num_vtx = self.vtx2xyz_ini.len() / 3;
-        del_fem_cpu::rod3_darboux::wdwddw_hair_system(
-            &mut self.w,
-            &mut self.dw,
-            &mut self.ddw,
-            &self.vtx2xyz_ini,
-            &self.vtx2xyz_def,
-            self.stiff_length,
-            &self.stiff_bendtwist,
-            &self.vtx2framex_ini,
-            &self.vtx2framex_def,
-            T::zero(),
-        );
-        if let Some((i_vtx, pos_goal)) = pick_info {
-            let i_vtx = *i_vtx;
-            use del_geo_core::mat4_col_major;
-            use mat4_col_major::Mat4ColMajor;
-            let one = T::one();
-            let two = one + one;
-            let stiff = two * two * two * two;
-            let kmat = mat4_col_major::from_diagonal(stiff, stiff, stiff, zero);
-            self.ddw.row2val[i_vtx].add_in_place(&kmat);
-            let c = del_geo_core::vec3::sub(
-                arrayref::array_ref![self.vtx2xyz_def, i_vtx * 3, 3],
-                pos_goal,
-            );
-            self.dw[i_vtx][0] = self.dw[i_vtx][0] + c[0];
-            self.dw[i_vtx][1] = self.dw[i_vtx][1] + c[1];
-            self.dw[i_vtx][2] = self.dw[i_vtx][2] + c[2];
-        }
-        // set bc flag
-        for i_vtx in 0..num_vtx {
-            for i_dof in 0..4 {
-                if self.vtx2isfix[i_vtx][i_dof] == 0 {
-                    continue;
-                }
-                self.dw[i_vtx][i_dof] = zero;
-            }
-        }
-        self.ddw.set_fixed_dof::<4>(one, &self.vtx2isfix);
-        //
-        {
-            let mut u_vec = vec![[zero; 4]; num_vtx];
-            let mut p_vec = vec![[zero; 4]; num_vtx];
-            let mut ap_vec = vec![[zero; 4]; num_vtx];
-            let _hist = del_fem_cpu::sparse_square::conjugate_gradient0(
-                &mut self.dw,
-                &mut u_vec,
-                &mut ap_vec,
-                &mut p_vec,
-                self.conv_ratio,
-                1000,
-                &self.ddw,
-            );
-            // dbg!(hist.last().unwrap());
-            del_fem_cpu::rod3_darboux::update_solution_hair(
-                &mut self.vtx2xyz_def,
-                &mut self.vtx2framex_def,
-                &u_vec,
-                &self.vtx2isfix,
-            );
-        }
-    }
-}
-
 struct MyApp {
     /// Behind an `Arc<Mutex<…>>` so we can pass it to [`egui::PaintCallback`] and paint later.
     drawer: Arc<Mutex<del_glow::drawer_elem2vtx_vtx2xyz::Drawer>>,
     // mat_modelview: [f32;16],
     mat_projection: [f32; 16],
     trackball: del_geo_core::view_rotation::Trackball<f32>,
-    simulator: RodSimulator<f32>,
+    simulator: del_fem_cpu::rod3_darboux::RodSimulator<f32>,
     gl: Option<Arc<glow::Context>>,
     pick_info: Option<(usize, [f32; 3])>,
 }
@@ -178,8 +40,8 @@ impl MyApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut simulator = {
             let (vtx2xyz, vtx2framex) = {
-                let (vtx2xyz, vtx2framex) =
-                    del_fem_cpu::rod3_darboux::make_config_darboux_helix(30, 0.2, 0.2, 0.3);
+                let vtx2xyz = del_msh_cpu::polyline3::helix(30, 0.2, 0.2, 0.3);
+                let vtx2framex = del_msh_cpu::polyline3::vtx2framex(&vtx2xyz);
                 let m = del_geo_core::mat4_col_major::from_translate(&[-0.9, 0.0, 0.0]);
                 let vtx2xyz = del_msh_cpu::vtx2xyz::transform_homogeneous(&vtx2xyz, &m);
                 (vtx2xyz, vtx2framex)
@@ -193,7 +55,7 @@ impl MyApp {
                 vtx2isfix[num_vtx - 1] = [1; 4];
                 vtx2isfix
             };
-            RodSimulator {
+            del_fem_cpu::rod3_darboux::RodSimulator {
                 vtx2xyz_ini: vtx2xyz.clone(),
                 vtx2xyz_def: vtx2xyz.clone(),
                 vtx2framex_ini: vtx2framex.clone(),
@@ -209,7 +71,7 @@ impl MyApp {
         };
         simulator.initialize_with_perturbation(0.5, 0.1);
         simulator.allocate_memory_for_linear_system();
-        dbg!(simulator.dw.len());
+        // dbg!(simulator.dw.len());
         //
         let gl = cc
             .gl

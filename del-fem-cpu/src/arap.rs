@@ -1,5 +1,3 @@
-use num_traits::AsPrimitive;
-
 pub fn optimal_rotation_for_arap_spoke<T>(
     i_vtx: usize,
     adj2vtx: &[usize],
@@ -311,8 +309,7 @@ pub fn optimal_rotations_mesh_vertx_for_arap_spoke_rim<T>(
     vtx2xyz_ini: &[T],
     vtx2xyz_def: &[T],
 ) where
-    T: num_traits::Float + num_traits::FloatConst + 'static + Copy + std::fmt::Debug,
-    f64: AsPrimitive<T>,
+    T: num_traits::Float + num_traits::FloatConst + std::fmt::Debug,
 {
     use del_geo_core::vec3::Vec3;
     let num_vtx = vtx2xyz_ini.len() / 3;
@@ -386,15 +383,19 @@ fn wdw_arap_spoke_rim<T>(
     rot2: &[T; 9],
 ) -> (T, [[T; 3]; 3])
 where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
-    f64: AsPrimitive<T>,
+    T: std::ops::AddAssign + num_traits::Float,
 {
+    let one = T::one();
+    let half = one / (one + one);
+    let three = one + one + one;
+    let four = one + one + one + one;
     use del_geo_core::mat3_col_major::Mat3ColMajor;
     use del_geo_core::vec3::Vec3;
     let cots = del_geo_core::tri3::cot(s.p0, s.p1, s.p2);
     let mut w = T::zero();
     {
-        let coeff: T = (0.25f64 / 3.0f64).as_();
+        // let coeff: T = (0.25f64 / 3.0f64).as_();
+        let coeff: T = one / (four * three);
         let d12_0 = e.p2.sub(e.p1).sub(&rot0.mult_vec(&s.p2.sub(s.p1)));
         let d12_1 = e.p2.sub(e.p1).sub(&rot1.mult_vec(&s.p2.sub(s.p1)));
         let d12_2 = e.p2.sub(e.p1).sub(&rot2.mult_vec(&s.p2.sub(s.p1)));
@@ -412,12 +413,11 @@ where
     }
     let mut dw = [[T::zero(); 3]; 3];
     {
-        let rot =
-            del_geo_core::mat3_col_major::add_three(rot0, rot1, rot2).scale(T::one() / 3.0.as_());
+        let rot = del_geo_core::mat3_col_major::add_three(rot0, rot1, rot2).scale(T::one() / three);
         let d12 = e.p2.sub(e.p1).sub(&rot.mult_vec(&s.p2.sub(s.p1)));
         let d20 = e.p0.sub(e.p2).sub(&rot.mult_vec(&s.p0.sub(s.p2)));
         let d01 = e.p1.sub(e.p0).sub(&rot.mult_vec(&s.p1.sub(s.p0)));
-        let coeff: T = 0.5f64.as_();
+        let coeff: T = half;
         dw[0].add_in_place(&d20.scale(coeff * cots[1]).sub(&d01.scale(coeff * cots[2])));
         dw[1].add_in_place(&d01.scale(coeff * cots[2]).sub(&d12.scale(coeff * cots[0])));
         dw[2].add_in_place(&d12.scale(coeff * cots[0]).sub(&d20.scale(coeff * cots[1])));
@@ -519,8 +519,7 @@ pub fn energy_arap_spoke_rim<T>(
     vtx2rot: &[T],
 ) -> T
 where
-    T: nalgebra::RealField + Copy + std::ops::AddAssign + num_traits::Float + 'static,
-    f64: AsPrimitive<T>,
+    T: std::ops::AddAssign + num_traits::Float,
 {
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);
@@ -591,8 +590,7 @@ pub fn residual_arap_spoke_rim<T>(
     vtx2xyz_def: &[T],
     vtx2rot: &[T],
 ) where
-    T: num_traits::Float + 'static + nalgebra::RealField + Copy,
-    f64: num_traits::AsPrimitive<T>,
+    T: num_traits::Float + std::ops::AddAssign + std::ops::SubAssign,
 {
     let num_vtx = vtx2xyz_ini.len() / 3;
     assert_eq!(vtx2rot.len(), num_vtx * 9);

@@ -29,6 +29,7 @@ pub fn merge_from_mesh<T>(
     }
 }
 
+/*
 /// return linear system
 /// I * `val_dia` + L * `val_offdia`
 pub fn to_linearsystem(
@@ -61,3 +62,4 @@ pub fn to_linearsystem(
     ls.end_merge();
     ls
 }
+ */

@@ -1,3 +1,4 @@
+/// merge to a block CSR data with diagonal matrix
 #[allow(clippy::needless_range_loop)]
 pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
     node2row: &[usize; N_NODE],
@@ -46,6 +47,7 @@ pub fn csrdia<T, const BLKSIZE: usize, const N_NODE: usize>(
     }
 }
 
+/// merge to block CSR data structure without diagonal matrix
 pub fn blkcsr<T, const BLKSIZE: usize, const N_NODE: usize>(
     node2row: &[usize; N_NODE],
     node2col: &[usize; N_NODE],

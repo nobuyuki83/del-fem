@@ -1,6 +1,3 @@
-use del_geo_core::vec2;
-use std::time::Instant;
-
 fn example1() -> anyhow::Result<()> {
     // constant value during simulation
     let gravity = [0., -10.];
@@ -344,6 +341,7 @@ fn example3() -> anyhow::Result<()> {
         {
             let transform_local2world = rb.local2world();
             for q_local in rb.vtx2xy.chunks(2) {
+                use del_geo_core::vec2;
                 let q_local = arrayref::array_ref![q_local, 0, 2];
                 let q_world = del_geo_core::mat3_col_major::transform_homogeneous(
                     &transform_local2world,
@@ -397,6 +395,7 @@ fn example3() -> anyhow::Result<()> {
                 let penetration = v_pq_world.norm();
                 let u_pq_world = v_pq_world.scale(1. / penetration);
                 // how rigid body rotation change w.r.t. the unit force `u_pq_world`
+                use del_geo_core::vec2;
                 let dtheta0 = vec2::area_quadrilateral(&q_world.sub(&rb.pos_cg_tmp), &u_pq_world);
                 let dh_theta = dtheta0 * dtheta0 / rb.moment_of_inertia;
                 let dh_p = if pnt2massinv[i_pnt] == 0. {
