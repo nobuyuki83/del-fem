@@ -2,7 +2,7 @@ import numpy
 import scipy
 import sys
 from del_msh_numpy import TriMesh, PolyLoop
-from del_fem import LaplacianMatrix, MassMatrix
+from del_fem_numpy import LaplacianMatrix, MassMatrix
 
 def test_01():
     vtxi2xyi = numpy.array([

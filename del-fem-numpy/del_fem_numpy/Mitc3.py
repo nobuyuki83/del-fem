@@ -9,7 +9,7 @@ def stiffness_matrix_from_uniform_mesh(
     from del_msh_numpy.TriMesh import vtx2vtx
     row2idx, idx2col = vtx2vtx(tri2vtx, vtx2xy.shape[0], True)
     idx2val = numpy.zeros((idx2col.shape[0], 3, 3), dtype=numpy.float32)
-    from del_fem.del_fem import merge_mitc3_to_bsr_for_meshtri2
+    from del_fem.del_fem_numpy import merge_mitc3_to_bsr_for_meshtri2
     merge_mitc3_to_bsr_for_meshtri2(
         thick, lam, myu,
         tri2vtx, vtx2xy,
@@ -25,7 +25,7 @@ def mass_matrix_from_uniform_mesh(
         vtx2xyz: numpy.typing.NDArray):
     num_vtx = vtx2xyz.shape[0]
     vtx2mass = numpy.zeros((num_vtx * 3), dtype=numpy.float32)
-    from del_fem.del_fem import mitc3_mass_for_trimesh2
+    from .del_fem_numpy import mitc3_mass_for_trimesh2
     mitc3_mass_for_trimesh2(thick, rho, elem2vtx, vtx2xyz, vtx2mass)
     from scipy.sparse import dia_matrix
     mmat = dia_matrix(

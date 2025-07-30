@@ -25,7 +25,7 @@ class Simulator:
         self.ap_vec = numpy.ndarray(shape=(num_vtx,4), dtype=numpy.float32)
 
     def initialize_with_perturbation(self, pos_mag, framex_mag):
-         from .del_fem import rod3_darboux_initialize_with_perturbation
+         from .del_fem_numpy import rod3_darboux_initialize_with_perturbation
          rod3_darboux_initialize_with_perturbation(
              self.vtx2xyz_def,
              self.vtx2framex_def,
@@ -40,7 +40,7 @@ class Simulator:
         self.dw.fill(0.)
         self.row2val.fill(0.)
         self.idx2val.fill(0.)
-        from .del_fem import add_wdwddw_rod3_darboux
+        from .del_fem_numpy import add_wdwddw_rod3_darboux
         add_wdwddw_rod3_darboux(
             self.vtx2xyz_ini,
             self.vtx2framex_ini,
@@ -54,7 +54,7 @@ class Simulator:
             self.idx2val)
 
     def apply_fix_bc(self):
-        from .del_fem import block_sparse_apply_bc
+        from .del_fem_numpy import block_sparse_apply_bc
         block_sparse_apply_bc(
             1.0,
             self.vtx2isfix,
@@ -62,14 +62,14 @@ class Simulator:
             self.idx2val,
             self.row2idx,
             self.idx2col)
-        from .del_fem import block_sparse_set_fixed_bc_to_rhs_vector
+        from .del_fem_numpy import block_sparse_set_fixed_bc_to_rhs_vector
         block_sparse_set_fixed_bc_to_rhs_vector(
             self.vtx2isfix,
             self.dw)
 
 
     def update_solution_static(self):
-        from .del_fem import conjugate_gradient
+        from .del_fem_numpy import conjugate_gradient
         conv = conjugate_gradient(
             self.dw,
             self.u_vec,
@@ -80,7 +80,7 @@ class Simulator:
             self.idx2val,
             self.row2val)
         # print(conv)
-        from .del_fem import rod3_darboux_update_solution_hair
+        from .del_fem_numpy import rod3_darboux_update_solution_hair
         rod3_darboux_update_solution_hair(
            self.vtx2xyz_def,
            self.vtx2framex_def,
