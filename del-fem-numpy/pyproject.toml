@@ -3,7 +3,7 @@ requires = ["maturin>=0.13,<0.14"]
 build-backend = "maturin"
 
 [project]
-version = "0.1.4"
+version = "0.1.7"
 name = "del-fem-numpy"
 requires-python = ">=3.7"
 classifiers = [
@@ -19,4 +19,4 @@ dependencies = [
 ]
 
 [tool.maturin]
-sdist-include = ["LICENSE", "README.md"]
+sdist-include = ["README.md"]
