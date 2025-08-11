@@ -88,3 +88,8 @@ class Simulator:
            self.vtx2isfix)
 
 
+    def pull_vertex(self, i_vtx, goal_pos):
+        stiff = 20.0
+        self.row2val[i_vtx] += numpy.diag([stiff, stiff, stiff, 0.]).flatten()
+        diff = self.vtx2xyz_def[i_vtx] - goal_pos
+        self.dw[i_vtx] += numpy.append(diff, 0.) * stiff
