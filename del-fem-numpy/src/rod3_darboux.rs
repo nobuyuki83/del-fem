@@ -33,6 +33,23 @@ pub fn add_wdwddw_rod3_darboux<'a>(
     mut row2val: numpy::PyReadwriteArray2<'a, f32>,
     mut idx2val: numpy::PyReadwriteArray2<'a, f32>,
 ) {
+    let num_vtx = vtx2xyz_ini.shape()[0];
+    assert!(vtx2xyz_ini.is_c_contiguous());
+    assert!(vtx2framex_ini.is_c_contiguous());
+    assert!(vtx2xyz_def.is_c_contiguous());
+    assert!(vtx2framex_def.is_c_contiguous());
+    assert!(dw.is_c_contiguous());
+    assert!(row2val.is_c_contiguous());
+    assert!(idx2val.is_c_contiguous());
+    //
+    let num_vtx = vtx2xyz_ini.shape()[0];
+    assert_eq!(vtx2xyz_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2xyz_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_def.shape(), &[num_vtx, 3]);
+    assert_eq!(dw.shape(), &[num_vtx, 4]);
+    assert_eq!(row2val.shape(), &[num_vtx, 16]);
+    //
     use slice_of_array::SliceNestExt;
     let dw: &mut [[f32; 4]] = dw.as_slice_mut().unwrap().nest_mut();
     let ddw = del_fem_cpu::sparse_square::MatrixRefMut::<f32, 16> {
@@ -67,6 +84,19 @@ fn rod3_darboux_initialize_with_perturbation(
     pos_mag: f32,
     framex_mag: f32,
 ) {
+    assert!(vtx2xyz_ini.is_c_contiguous());
+    assert!(vtx2framex_ini.is_c_contiguous());
+    assert!(vtx2xyz_def.is_c_contiguous());
+    assert!(vtx2framex_def.is_c_contiguous());
+    assert!(vtx2isfix.is_c_contiguous());
+    //
+    let num_vtx = vtx2xyz_ini.shape()[0];
+    assert_eq!(vtx2xyz_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2xyz_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2isfix.shape(), &[num_vtx, 4]);
+    //
     use rand::SeedableRng;
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
     use slice_of_array::SliceNestExt;
@@ -90,6 +120,17 @@ fn rod3_darboux_update_solution_hair(
     vec_x: PyReadonlyArray2<f32>,
     vtx2isfix: PyReadonlyArray2<i32>,
 ) {
+    assert!(vtx2xyz.is_c_contiguous());
+    assert!(vtx2framex.is_c_contiguous());
+    assert!(vec_x.is_c_contiguous());
+    assert!(vtx2isfix.is_c_contiguous());
+    //
+    let num_vtx = vtx2xyz.shape()[0];
+    assert_eq!(vtx2xyz.shape(), &[num_vtx,3]);
+    assert_eq!(vtx2framex.shape(), &[num_vtx,3]);
+    assert_eq!(vec_x.shape(), &[num_vtx,4]);
+    assert_eq!(vtx2isfix.shape(), &[num_vtx,4]);
+    //
     use slice_of_array::SliceNestExt;
     del_fem_cpu::rod3_darboux::update_solution_hair(
         vtx2xyz.as_slice_mut().unwrap(),

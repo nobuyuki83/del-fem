@@ -28,6 +28,12 @@ fn block_sparse_apply_bc(
     row2idx: PyReadonlyArray1<usize>,
     idx2col: PyReadonlyArray1<usize>,
 ) {
+    assert!(blk2isfix.is_c_contiguous());
+    assert!(row2val.is_c_contiguous());
+    assert!(idx2val.is_c_contiguous());
+    assert!(row2idx.is_c_contiguous());
+    assert!(idx2col.is_c_contiguous());
+    //
     use slice_of_array::SliceNestExt;
     let num_dim = blk2isfix.shape()[1];
     let num_blk = blk2isfix.shape()[0];
@@ -35,7 +41,7 @@ fn block_sparse_apply_bc(
     if num_dim == 4 {
         assert_eq!(row2val.shape(), &[num_blk, 16]);
         assert_eq!(idx2val.shape(), &[num_idx, 16]);
-        assert_eq!(row2idx.shape()[0] - 1, num_blk);
+        assert_eq!(row2idx.shape()[0], num_blk + 1);
         assert_eq!(idx2col.shape()[0], num_idx);
         del_fem_cpu::sparse_square::set_fixed_bc::<f32, 4, 16>(
             val_dia,
