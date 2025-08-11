@@ -93,13 +93,22 @@ jobs:
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [ macos, windows, linux ]
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
-          name: wheels
-      - name: Publish to PyPI
-        uses: messense/maturin-action@v1
+          path: all_wheels
+      - name: Flatten all wheels into dist/
+        run: |
+          mkdir dist
+          find all_wheels -name '*.whl' -exec cp {} dist/ \;
+          find all_wheels -name '*.tar.gz' -exec cp {} dist/ \;
+      - name: Check wheels
+        run: |
+          pip install twine
+          pip install --upgrade twine
+          twine check dist/*
+      - name: Upload to PyPI
+        run: |
+          twine upload dist/*
         env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.MATURIN_PASSWORD }}
-        with:
-          command: upload
-          args: --skip-existing *
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
