@@ -13,7 +13,7 @@ resolver = "2"
 
 [workspace.package]
 name = "del-fem"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "finite element method (FEM) utility codes"
 documentation = "https://docs.rs/del_fem"
@@ -50,13 +50,14 @@ del-fem-candle = { path = "del-fem-candle" }
 # del-canvas = { path = "../del-canvas" }
 
 # for GitHub push
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-cpu = { git = "https://github.com/nobuyuki83/del-msh.git" }
-del-fem-ls = { path = "del-fem-ls" }
+#del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+#del-msh-cpu = { git = "https://github.com/nobuyuki83/del-msh.git" }
+#del-fem-ls = { path = "del-fem-ls" }
 
 
 # for crate publish
-# del-geo-core = "=0.1.34"
+del-geo-core = "0.1.36"
+del-msh-cpu = "=0.1.42"
 # del-msh-core = "=0.1.39"
 # del-canvas = "=0.1.5"
 # del-fem-ls = "=0.1.6"

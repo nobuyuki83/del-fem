@@ -44,5 +44,4 @@ jobs:
           pip3 list
           echo "test library using pytest"
           pip3 install pytest
-          pip3 install del-ls
           python3 -m pytest -s

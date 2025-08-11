@@ -10,19 +10,38 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-    - run: |
-        echo ${{ github.ref }}
-    - uses: actions/checkout@v3
-    - uses: messense/maturin-action@v1
-      with:
-        manylinux: auto
-        command: build
-        args: --release --sdist -o dist --find-interpreter
-    - name: Upload wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: wheels
-        path: dist
+      - name: Check Docker
+        run: docker --version
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install maturin
+        run: pip install maturin
+      - name: Build wheels for Python 3.8–3.12
+        run: |
+          docker run --rm -v "$(pwd)":/io quay.io/pypa/manylinux2014_x86_64 /bin/bash -c "
+          set -ex
+          cd /io
+          
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source \$HOME/.cargo/env
+          
+          for PYBIN in /opt/python/cp310*/bin /opt/python/cp311*/bin /opt/python/cp312*/bin /opt/python/cp313*/bin; do
+            \${PYBIN}/pip install -U pip setuptools wheel maturin
+            \${PYBIN}/maturin build \
+              --sdist \
+              --release \
+              --interpreter \${PYBIN}/python \
+              -o /io/dist \
+              -m del-fem-numpy/Cargo.toml
+          done
+          "
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux
+          path: dist
 
   windows:
     runs-on: windows-latest
@@ -33,7 +52,7 @@ jobs:
         command: build
         args: --release -o dist --find-interpreter
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: wheels
         path: dist
@@ -47,7 +66,7 @@ jobs:
         command: build
         args: --release -o dist --universal2 --find-interpreter
     - name: Upload wheels
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: wheels
         path: dist
