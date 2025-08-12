@@ -1137,6 +1137,7 @@ where
                 arrayref::array_ref![self.vtx2xyz_def, i_vtx * 3, 3],
                 pos_goal,
             );
+            let c = del_geo_core::vec3::scale(&c, stiff);
             self.dw[i_vtx][0] = self.dw[i_vtx][0] + c[0];
             self.dw[i_vtx][1] = self.dw[i_vtx][1] + c[1];
             self.dw[i_vtx][2] = self.dw[i_vtx][2] + c[2];

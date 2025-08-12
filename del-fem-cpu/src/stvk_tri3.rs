@@ -1,4 +1,3 @@
-
 /// 2D Green-Lagrange strain and its derivative with respect to triangle's corner positions.
 /// # argument
 /// * p_ini - undeformed triangle vertex positions

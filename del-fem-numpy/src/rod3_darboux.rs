@@ -126,10 +126,10 @@ fn rod3_darboux_update_solution_hair(
     assert!(vtx2isfix.is_c_contiguous());
     //
     let num_vtx = vtx2xyz.shape()[0];
-    assert_eq!(vtx2xyz.shape(), &[num_vtx,3]);
-    assert_eq!(vtx2framex.shape(), &[num_vtx,3]);
-    assert_eq!(vec_x.shape(), &[num_vtx,4]);
-    assert_eq!(vtx2isfix.shape(), &[num_vtx,4]);
+    assert_eq!(vtx2xyz.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex.shape(), &[num_vtx, 3]);
+    assert_eq!(vec_x.shape(), &[num_vtx, 4]);
+    assert_eq!(vtx2isfix.shape(), &[num_vtx, 4]);
     //
     use slice_of_array::SliceNestExt;
     del_fem_cpu::rod3_darboux::update_solution_hair(
