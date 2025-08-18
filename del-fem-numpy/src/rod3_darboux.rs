@@ -1,4 +1,4 @@
-use numpy::PyUntypedArrayMethods;
+use numpy::{PyArrayMethods, PyUntypedArrayMethods};
 use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyReadwriteArray2};
 use pyo3::prelude::PyModuleMethods;
 use pyo3::Python;
@@ -14,6 +14,10 @@ pub fn add_functions(
         rod3_darboux_initialize_with_perturbation,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(
+        rod3_darboux_orthonormalize_framex_for_hair,
+        m
+    )?)?;
     Ok(())
 }
 
@@ -24,6 +28,7 @@ pub fn add_wdwddw_rod3_darboux<'a>(
     vtx2framex_ini: PyReadonlyArray2<'a, f32>,
     vtx2xyz_def: PyReadonlyArray2<'a, f32>,
     vtx2framex_def: PyReadonlyArray2<'a, f32>,
+    mdtt: f32,
     //
     mut w: numpy::PyReadwriteArray0<'a, f32>,
     mut dw: numpy::PyReadwriteArray2<'a, f32>,
@@ -33,7 +38,6 @@ pub fn add_wdwddw_rod3_darboux<'a>(
     mut row2val: numpy::PyReadwriteArray2<'a, f32>,
     mut idx2val: numpy::PyReadwriteArray2<'a, f32>,
 ) {
-    let num_vtx = vtx2xyz_ini.shape()[0];
     assert!(vtx2xyz_ini.is_c_contiguous());
     assert!(vtx2framex_ini.is_c_contiguous());
     assert!(vtx2xyz_def.is_c_contiguous());
@@ -69,7 +73,7 @@ pub fn add_wdwddw_rod3_darboux<'a>(
         &[1.0, 1.0, 1.0],
         vtx2framex_ini.as_slice().unwrap(),
         vtx2framex_def.as_slice().unwrap(),
-        0.0001,
+        mdtt,
     );
 }
 
@@ -109,6 +113,24 @@ fn rod3_darboux_initialize_with_perturbation(
         pos_mag,
         framex_mag,
         rng,
+    );
+}
+
+#[pyo3::pyfunction]
+fn rod3_darboux_orthonormalize_framex_for_hair(
+    _py: Python,
+    mut vtx2framex: PyReadwriteArray2<f32>,
+    vtx2xyz: PyReadonlyArray2<f32>,
+) {
+    assert!(vtx2framex.is_c_contiguous());
+    assert!(vtx2xyz.is_c_contiguous());
+    //
+    let num_vtx = vtx2xyz.shape()[0];
+    assert_eq!(vtx2xyz.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex.shape(), &[num_vtx, 3]);
+    del_fem_cpu::rod3_darboux::orthonormalize_framex_for_hair(
+        vtx2framex.as_slice_mut().unwrap(),
+        vtx2xyz.as_slice().unwrap(),
     );
 }
 

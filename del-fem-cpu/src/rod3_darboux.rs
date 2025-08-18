@@ -1064,6 +1064,8 @@ where
     pub vtx2framex_ini: Vec<T>,
     pub vtx2xyz_def: Vec<T>,
     pub vtx2framex_def: Vec<T>,
+    pub vtx2velo: Vec<T>,
+    pub vtx2xyz_tmp: Vec<T>,
     //
     pub vtx2isfix: Vec<[i32; 4]>,
     //
@@ -1166,6 +1168,97 @@ where
                 &u_vec,
                 &self.vtx2isfix,
             );
+        }
+    }
+
+    pub fn update_dynamic(&mut self, pick_info: &Option<(usize, [T; 3])>, dt: T) {
+        let zero = T::zero();
+        let one = T::one();
+        let num_vtx = self.vtx2xyz_ini.len() / 3;
+        for i_vtx in 0..num_vtx {
+            for i_dim in 0..3 {
+                if self.vtx2isfix[i_vtx][i_dim] != 0 {
+                    continue;
+                }
+                self.vtx2xyz_tmp[i_vtx * 3 + i_dim] =
+                    self.vtx2xyz_def[i_vtx * 3 + i_dim] + dt * self.vtx2velo[i_vtx * 3 + i_dim];
+            }
+        }
+        orthonormalize_framex_for_hair(&mut self.vtx2framex_def, &self.vtx2xyz_tmp);
+        wdwddw_hair_system(
+            &mut self.w,
+            &mut self.dw,
+            self.ddw.as_ref_mut(),
+            &self.vtx2xyz_ini,
+            &self.vtx2xyz_tmp,
+            self.stiff_length,
+            &self.stiff_bendtwist,
+            &self.vtx2framex_ini,
+            &self.vtx2framex_def,
+            T::zero(),
+        );
+        if let Some((i_vtx, pos_goal)) = pick_info {
+            let i_vtx = *i_vtx;
+            use del_geo_core::mat4_col_major;
+            let one = T::one();
+            let two = one + one;
+            let stiff = two * two * two * two;
+            let kmat = mat4_col_major::from_diagonal(stiff, stiff, stiff, zero);
+            use del_geo_core::mat4_col_major::Mat4ColMajor;
+            self.ddw.row2val[i_vtx].add_in_place(&kmat);
+            let c = del_geo_core::vec3::sub(
+                arrayref::array_ref![self.vtx2xyz_tmp, i_vtx * 3, 3],
+                pos_goal,
+            );
+            let c = del_geo_core::vec3::scale(&c, stiff);
+            self.dw[i_vtx][0] = self.dw[i_vtx][0] + c[0];
+            self.dw[i_vtx][1] = self.dw[i_vtx][1] + c[1];
+            self.dw[i_vtx][2] = self.dw[i_vtx][2] + c[2];
+        }
+        // set inertia
+        {
+            let c = one / (dt * dt);
+            for i_vtx in 0..num_vtx {
+                self.ddw.row2val[i_vtx][0] = self.ddw.row2val[i_vtx][0] + c;
+                self.ddw.row2val[i_vtx][5] = self.ddw.row2val[i_vtx][5] + c;
+                self.ddw.row2val[i_vtx][10] = self.ddw.row2val[i_vtx][10] + c;
+            }
+        }
+        // set bc flag
+        crate::sparse_square::set_fix_dof_to_rhs_vector::<T, 4>(&mut self.dw, &self.vtx2isfix);
+        self.ddw.set_fixed_dof::<4>(one, &self.vtx2isfix);
+        //
+        {
+            let mut u_vec = vec![[zero; 4]; num_vtx];
+            let mut p_vec = vec![[zero; 4]; num_vtx];
+            let mut ap_vec = vec![[zero; 4]; num_vtx];
+            let _hist = crate::sparse_square::conjugate_gradient(
+                &mut self.dw,
+                &mut u_vec,
+                &mut ap_vec,
+                &mut p_vec,
+                self.conv_ratio,
+                1000,
+                self.ddw.as_ref(),
+            );
+            // dbg!(hist.last().unwrap());
+            update_solution_hair(
+                &mut self.vtx2xyz_tmp,
+                &mut self.vtx2framex_def,
+                &u_vec,
+                &self.vtx2isfix,
+            );
+        }
+        for i_vtx in 0..num_vtx {
+            for i_dim in 0..3 {
+                if self.vtx2isfix[i_vtx][i_dim] != 0 {
+                    continue;
+                }
+                self.vtx2velo[i_vtx * 3 + i_dim] = (self.vtx2xyz_tmp[i_vtx * 3 + i_dim]
+                    - self.vtx2xyz_def[i_vtx * 3 + i_dim])
+                    / dt;
+                self.vtx2xyz_def[i_vtx * 3 + i_dim] = self.vtx2xyz_tmp[i_vtx * 3 + i_dim];
+            }
         }
     }
 }

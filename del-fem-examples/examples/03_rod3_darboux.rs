@@ -46,8 +46,8 @@ impl MyApp {
                 let vtx2xyz = del_msh_cpu::vtx2xyz::transform_homogeneous(&vtx2xyz, &m);
                 (vtx2xyz, vtx2framex)
             };
+            let num_vtx = vtx2xyz.len() / 3;
             let vtx2isfix = {
-                let num_vtx = vtx2xyz.len() / 3;
                 let mut vtx2isfix = vec![[0; 4]; num_vtx];
                 vtx2isfix[0] = [1; 4];
                 vtx2isfix[1] = [1, 1, 1, 0];
@@ -58,6 +58,8 @@ impl MyApp {
             del_fem_cpu::rod3_darboux::RodSimulator {
                 vtx2xyz_ini: vtx2xyz.clone(),
                 vtx2xyz_def: vtx2xyz.clone(),
+                vtx2xyz_tmp: vtx2xyz.clone(),
+                vtx2velo: vec![0.; num_vtx * 3],
                 vtx2framex_ini: vtx2framex.clone(),
                 vtx2framex_def: vtx2framex,
                 vtx2isfix,
@@ -101,7 +103,8 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         {
-            self.simulator.update_static(&self.pick_info);
+            // self.simulator.update_static(&self.pick_info);
+            self.simulator.update_dynamic(&self.pick_info, 1.0);
             self.drawer.lock().set_vtx2xyz(
                 &self.gl.clone().unwrap(),
                 &self.simulator.vtx2xyz_def,
