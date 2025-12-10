@@ -82,7 +82,9 @@ pub fn test_hoge() {
     }
 }
 
+
 //
+#[allow(clippy::too_many_arguments)]
 fn add_wdwddw_from_energy_density_cauchy<Real>(
     w: &mut Real,
     dwdx: &mut [[Real; 3]; 8],

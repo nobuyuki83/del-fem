@@ -261,15 +261,16 @@ where
 }
 
 /// solve a real-valued linear system using the conjugate gradient method with preconditioner
+#[allow(clippy::too_many_arguments)]
 pub fn preconditioned_conjugate_gradient<T, const N: usize, const NN: usize>(
-    r_vec: &mut [[T; 2]],
-    x_vec: &mut Vec<[T; 2]>,
-    pr_vec: &mut Vec<[T; 2]>,
-    p_vec: &mut Vec<[T; 2]>,
+    r_vec: &mut [[T; N]],
+    x_vec: &mut Vec<[T; N]>,
+    pr_vec: &mut Vec<[T; N]>,
+    p_vec: &mut Vec<[T; N]>,
     conv_ratio_tol: T,
     max_nitr: usize,
-    mat: &crate::sparse_square::Matrix<[T; 4]>,
-    ilu: &crate::sparse_ilu::Preconditioner<[T; 4]>,
+    mat: &Matrix<[T; NN]>,
+    ilu: &crate::sparse_ilu::Preconditioner<[T; NN]>,
 ) -> Vec<T>
 where
     T: num_traits::Float + std::fmt::Debug,
@@ -277,9 +278,9 @@ where
     use crate::slice_of_array::{add_scaled_vector, copy, dot, scale_and_add_vec, set_zero};
     {
         let n = r_vec.len();
-        x_vec.resize(n, [T::zero(); 2]);
-        pr_vec.resize(n, [T::zero(); 2]);
-        p_vec.resize(n, [T::zero(); 2]);
+        x_vec.resize(n, [T::zero(); N]);
+        pr_vec.resize(n, [T::zero(); N]);
+        p_vec.resize(n, [T::zero(); N]);
     }
     assert_eq!(r_vec.len(), mat.num_blk);
     let mut conv_hist = Vec::<T>::new();

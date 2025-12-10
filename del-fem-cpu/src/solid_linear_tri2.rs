@@ -229,7 +229,7 @@ mod tests {
                 let mut prec = crate::sparse_ilu::Preconditioner::<[f64; 4]>::new();
                 prec.initialize_full(num_vtx);
                 copy_value(&mut prec, &prob.bsm);
-                decompose::<f64, 2, 4>(&mut prec);
+                decompose::<f64, 2, 4>(&mut prec).unwrap();
                 let mut u_vec = r_vec.clone();
                 crate::sparse_ilu::solve_preconditioning_vec(&mut u_vec, &prec);
                 (u_vec, 1)
@@ -238,7 +238,7 @@ mod tests {
                 let mut prec = crate::sparse_ilu::Preconditioner::<[f64; 4]>::new();
                 prec.initialize_ilu0(&prob.bsm);
                 copy_value(&mut prec, &prob.bsm);
-                decompose::<f64, 2, 4>(&mut prec);
+                decompose::<f64, 2, 4>(&mut prec).unwrap();
                 let mut u_vec = vec![[0f64; 2]; num_vtx];
                 let mut pr_vec = vec![[0f64; 2]; num_vtx];
                 let mut p_vec = vec![[0f64; 2]; num_vtx];
@@ -258,7 +258,7 @@ mod tests {
                 let mut prec = crate::sparse_ilu::Preconditioner::<[f64; 4]>::new();
                 prec.initialize_iluk(&prob.bsm, usize::MAX);
                 copy_value(&mut prec, &prob.bsm);
-                decompose::<f64, 2, 4>(&mut prec);
+                decompose::<f64, 2, 4>(&mut prec).unwrap();
                 let mut u_vec = vec![[0f64; 2]; num_vtx];
                 let mut pr_vec = vec![[0f64; 2]; num_vtx];
                 let mut p_vec = vec![[0f64; 2]; num_vtx];

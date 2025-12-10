@@ -1,3 +1,5 @@
+
+#[allow(clippy::type_complexity)]
 pub fn wdwddw_squared_length_difference<T>(
     stiffness: T,
     node2xyz_def: &[[T; 3]; 2],
@@ -25,4 +27,22 @@ where
     let ddw = [[m, m.scale(-one)], [m.scale(-one), m]];
     let w = half * stiffness * c * c;
     (w, dw, ddw)
+}
+
+pub fn w_squared_length_difference<T>(
+    stiffness: T,
+    node2xyz_def: &[[T; 3]; 2],
+    edge_length_ini: T,
+) -> T
+where
+    T: num_traits::Float,
+{
+    use del_geo_core::vec3::Vec3;
+    //
+    let one = T::one();
+    let half = one / (one + one);
+    let v = node2xyz_def[0].sub(&node2xyz_def[1]);
+    let l = v.norm();
+    let c = edge_length_ini - l;
+    half * stiffness * c * c
 }

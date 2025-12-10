@@ -149,6 +149,7 @@ fn test() {
 /// * `lambda` - Lame's 1st parameter
 /// * `myu` - Lame's 2nd parameter
 #[allow(non_snake_case)]
+#[allow(clippy::type_complexity)]
 pub fn wdwddw_<T>(
     p0: [[T; 3]; 3],
     p1: [[T; 3]; 3],

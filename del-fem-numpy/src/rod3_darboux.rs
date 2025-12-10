@@ -1,14 +1,13 @@
-use numpy::{PyArrayMethods, PyUntypedArrayMethods};
-use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyReadwriteArray2};
-use pyo3::prelude::PyModuleMethods;
-use pyo3::Python;
+use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyReadwriteArray2, PyUntypedArrayMethods};
+use pyo3::{prelude::PyModuleMethods, Python};
 
 pub fn add_functions(
     _py: pyo3::Python,
     m: &pyo3::Bound<pyo3::types::PyModule>,
 ) -> pyo3::PyResult<()> {
     use pyo3::wrap_pyfunction;
-    m.add_function(wrap_pyfunction!(add_wdwddw_rod3_darboux, m)?)?;
+    m.add_function(wrap_pyfunction!(rod3_darboux_add_wdwddw, m)?)?;
+    m.add_function(wrap_pyfunction!(rod3_darboux_add_w, m)?)?;
     m.add_function(wrap_pyfunction!(rod3_darboux_update_solution_hair, m)?)?;
     m.add_function(wrap_pyfunction!(
         rod3_darboux_initialize_with_perturbation,
@@ -18,11 +17,43 @@ pub fn add_functions(
         rod3_darboux_orthonormalize_framex_for_hair,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(rod3_darboux_compute_velocity, m)?)?;
     Ok(())
 }
 
 #[pyo3::pyfunction]
-pub fn add_wdwddw_rod3_darboux<'a>(
+pub fn rod3_darboux_add_w<'a>(
+    _py: Python<'a>,
+    vtx2xyz_ini: PyReadonlyArray2<'a, f32>,
+    vtx2framex_ini: PyReadonlyArray2<'a, f32>,
+    vtx2xyz_def: PyReadonlyArray2<'a, f32>,
+    vtx2framex_def: PyReadonlyArray2<'a, f32>,
+) -> f32 {
+    assert!(vtx2xyz_ini.is_c_contiguous());
+    assert!(vtx2framex_ini.is_c_contiguous());
+    assert!(vtx2xyz_def.is_c_contiguous());
+    assert!(vtx2framex_def.is_c_contiguous());
+    //
+    let num_vtx = vtx2xyz_ini.shape()[0];
+    assert_eq!(vtx2xyz_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_ini.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2xyz_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_def.shape(), &[num_vtx, 3]);
+    //
+    let w = del_fem_cpu::rod3_darboux::w_hair_system(
+        vtx2xyz_ini.as_slice().unwrap(),
+        vtx2xyz_def.as_slice().unwrap(),
+        1.0,
+        &[1.0, 1.0, 1.0],
+        vtx2framex_ini.as_slice().unwrap(),
+        vtx2framex_def.as_slice().unwrap(),
+    );
+    w
+}
+
+#[pyo3::pyfunction]
+#[allow(clippy::too_many_arguments)]
+pub fn rod3_darboux_add_wdwddw<'a>(
     _py: Python<'a>,
     vtx2xyz_ini: PyReadonlyArray2<'a, f32>,
     vtx2framex_ini: PyReadonlyArray2<'a, f32>,
@@ -73,11 +104,12 @@ pub fn add_wdwddw_rod3_darboux<'a>(
         &[1.0, 1.0, 1.0],
         vtx2framex_ini.as_slice().unwrap(),
         vtx2framex_def.as_slice().unwrap(),
-        mdtt,
+        [mdtt, mdtt, mdtt, 0.],
     );
 }
 
 #[pyo3::pyfunction]
+#[allow(clippy::too_many_arguments)]
 fn rod3_darboux_initialize_with_perturbation(
     _py: Python,
     mut vtx2xyz_def: PyReadwriteArray2<f32>,
@@ -140,6 +172,7 @@ fn rod3_darboux_update_solution_hair(
     mut vtx2xyz: PyReadwriteArray2<f32>,
     mut vtx2framex: PyReadwriteArray2<f32>,
     vec_x: PyReadonlyArray2<f32>,
+    scale: f32,
     vtx2isfix: PyReadonlyArray2<i32>,
 ) {
     assert!(vtx2xyz.is_c_contiguous());
@@ -158,6 +191,46 @@ fn rod3_darboux_update_solution_hair(
         vtx2xyz.as_slice_mut().unwrap(),
         vtx2framex.as_slice_mut().unwrap(),
         vec_x.as_slice().unwrap().nest(),
+        scale,
         vtx2isfix.as_slice().unwrap().nest(),
+    );
+}
+
+#[pyo3::pyfunction]
+#[allow(clippy::too_many_arguments)]
+fn rod3_darboux_compute_velocity(
+    _py: Python,
+    mut vtx2velo: PyReadwriteArray2<f32>,
+    dt: f32,
+    damp: f32,
+    vtx2isfix: PyReadonlyArray2<i32>,
+    vtx2xyz_def: PyReadonlyArray2<f32>,
+    vtx2xyz_tmp: PyReadonlyArray2<f32>,
+    vtx2framex_def: PyReadonlyArray2<f32>,
+    vtx2framex_tmp: PyReadonlyArray2<f32>,
+) {
+    assert!(vtx2velo.is_c_contiguous());
+    assert!(vtx2isfix.is_c_contiguous());
+    assert!(vtx2xyz_def.is_c_contiguous());
+    assert!(vtx2xyz_tmp.is_c_contiguous());
+    assert!(vtx2framex_def.is_c_contiguous());
+    assert!(vtx2framex_tmp.is_c_contiguous());
+    let num_vtx = vtx2velo.shape()[0];
+    assert_eq!(vtx2velo.shape(), &[num_vtx, 4]);
+    assert_eq!(vtx2isfix.shape(), &[num_vtx, 4]);
+    assert_eq!(vtx2xyz_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2xyz_tmp.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_def.shape(), &[num_vtx, 3]);
+    assert_eq!(vtx2framex_tmp.shape(), &[num_vtx, 3]);
+    use slice_of_array::SliceNestExt;
+    del_fem_cpu::rod3_darboux::compute_velocity(
+        vtx2velo.as_slice_mut().unwrap().nest_mut(),
+        dt,
+        damp,
+        vtx2isfix.as_slice().unwrap().nest(),
+        vtx2xyz_def.as_slice().unwrap(),
+        vtx2xyz_tmp.as_slice().unwrap(),
+        vtx2framex_def.as_slice().unwrap(),
+        vtx2framex_tmp.as_slice().unwrap(),
     );
 }

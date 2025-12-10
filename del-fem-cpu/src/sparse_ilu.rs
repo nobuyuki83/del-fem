@@ -124,7 +124,9 @@ pub fn copy_value<T, const NN: usize>(
     }
 }
 
-pub fn decompose<T, const N: usize, const NN: usize>(ilu: &mut Preconditioner<[T; NN]>)
+pub fn decompose<T, const N: usize, const NN: usize>(
+    ilu: &mut Preconditioner<[T; NN]>,
+) -> Result<(), String>
 where
     T: num_traits::Float + std::fmt::Debug,
 {
@@ -161,7 +163,11 @@ where
         }
         // invserse diagonal
         // dbg!(&ilu.row2val[i_row]);
-        ilu.row2val[i_row] = matn_col_major::try_inverse::<T, N, NN>(&ilu.row2val[i_row]).unwrap();
+        let res = matn_col_major::try_inverse::<T, N, NN>(&ilu.row2val[i_row]);
+        if res.is_none() {
+            return Err("frac_failure".to_string());
+        }
+        ilu.row2val[i_row] = res.unwrap();
         // [U] = [1/D][U]
         for ij_idx in ilu.row2idx_dia[i_row]..ilu.row2idx[i_row + 1] {
             assert!(ij_idx < ilu.idx2col.len());
@@ -178,6 +184,7 @@ where
             col2idx[j_col] = usize::MAX;
         }
     } // end iblk
+    Ok(())
 }
 
 pub fn solve_preconditioning_vec<T, const N: usize, const NN: usize>(

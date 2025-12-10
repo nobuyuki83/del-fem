@@ -34,13 +34,15 @@ struct MyApp {
     simulator: del_fem_cpu::rod3_darboux::RodSimulator<f32>,
     gl: Option<Arc<glow::Context>>,
     pick_info: Option<(usize, [f32; 3])>,
+    icnt: usize,
 }
 
 impl MyApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut simulator = {
             let (vtx2xyz, vtx2framex) = {
-                let vtx2xyz = del_msh_cpu::polyline3::helix(30, 0.2, 0.2, 0.3);
+                //let vtx2xyz = del_msh_cpu::polyline3::helix(10, 0.10, 0.0, 0.1);
+                let vtx2xyz = del_msh_cpu::polyline3::helix(40, 0.05, 0.2, 0.1);
                 let vtx2framex = del_msh_cpu::polyline3::vtx2framex(&vtx2xyz);
                 let m = del_geo_core::mat4_col_major::from_translate(&[-0.9, 0.0, 0.0]);
                 let vtx2xyz = del_msh_cpu::vtx2xyz::transform_homogeneous(&vtx2xyz, &m);
@@ -49,29 +51,31 @@ impl MyApp {
             let num_vtx = vtx2xyz.len() / 3;
             let vtx2isfix = {
                 let mut vtx2isfix = vec![[0; 4]; num_vtx];
-                vtx2isfix[0] = [1; 4];
+                vtx2isfix[0] = [1;4];
                 vtx2isfix[1] = [1, 1, 1, 0];
                 vtx2isfix[num_vtx - 2] = [1, 1, 1, 0];
-                vtx2isfix[num_vtx - 1] = [1; 4];
+                vtx2isfix[num_vtx - 1] = [1, 1, 1, 0];
                 vtx2isfix
             };
             del_fem_cpu::rod3_darboux::RodSimulator {
                 vtx2xyz_ini: vtx2xyz.clone(),
                 vtx2xyz_def: vtx2xyz.clone(),
                 vtx2xyz_tmp: vtx2xyz.clone(),
-                vtx2velo: vec![0.; num_vtx * 3],
+                vtx2velo: vec![[0.; 4]; num_vtx],
                 vtx2framex_ini: vtx2framex.clone(),
-                vtx2framex_def: vtx2framex,
+                vtx2framex_def: vtx2framex.clone(),
+                vtx2framex_tmp: vtx2framex.clone(),
                 vtx2isfix,
                 w: 0.,
                 dw: vec![],
                 ddw: del_fem_cpu::sparse_square::Matrix::<[f32; 16]>::new(),
+                ilu: del_fem_cpu::sparse_ilu::Preconditioner::<[f32; 16]>::new(),
                 conv_ratio: 1.0e-5,
                 stiff_length: 1.0,
                 stiff_bendtwist: [1., 1., 1.],
             }
         };
-        simulator.initialize_with_perturbation(0.5, 0.1);
+        //simulator.initialize_with_perturbation(0.01, 0.0001);
         simulator.allocate_memory_for_linear_system();
         // dbg!(simulator.dw.len());
         //
@@ -96,27 +100,29 @@ impl MyApp {
             simulator,
             gl: cc.gl.clone(),
             pick_info: None,
+            icnt: 0,
         }
     }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.icnt += 1;
+        ctx.request_repaint_after(std::time::Duration::from_secs_f64(1.0 / 30.0)); // target: 30FPS
         {
-            // self.simulator.update_static(&self.pick_info);
+            //self.simulator.update_static(&self.pick_info);
             self.simulator.update_dynamic(&self.pick_info, 1.0);
             self.drawer.lock().set_vtx2xyz(
                 &self.gl.clone().unwrap(),
                 &self.simulator.vtx2xyz_def,
                 3,
             );
-            // dbg!(self.simulator.w);
         }
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("push initialize button to add random perturbation to the rod");
             let res = ui.button("Initialize");
             if res.clicked() {
-                self.simulator.initialize_with_perturbation(0.3, 0.1);
+                self.simulator.initialize_with_perturbation(0.05, 0.01);
             }
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 let (id, rect) = ui.allocate_space(ui.available_size());
@@ -204,7 +210,7 @@ impl MyApp {
                     self.pick_info = Some((i_vtx_pick, pos_goal));
                 }
             }
-            dbg!(&self.pick_info);
+            // dbg!(&self.pick_info);
         }
         if response.drag_stopped() {
             self.pick_info = None;

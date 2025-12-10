@@ -75,6 +75,7 @@ fn block_sparse_set_fixed_bc_to_rhs_vector(
 }
 
 #[pyo3::pyfunction]
+#[allow(clippy::too_many_arguments)]
 fn conjugate_gradient<'a>(
     _py: Python<'a>,
     mut r_vec: PyReadwriteArray2<'a, f32>,

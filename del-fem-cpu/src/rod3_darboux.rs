@@ -1,25 +1,12 @@
+use del_geo_core::vec3::Vec3;
+use num_traits::AsPrimitive;
+
 /// frame after small vertex movement of z0 and z-axis rotation
 fn updated_rod_frame<T>(ux0: &[T; 3], z0: &[T; 3], dz: &[T; 3], dtheta: T) -> [[T; 3]; 3]
 where
     T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
 {
     use del_geo_core::vec3::Vec3;
-    /*
-    let len_z0 = z0.norm();
-    let invlen_z0 = T::one() / len_z0;
-    let uz0 = z0.scale(invlen_z0);
-    let uy0 = uz0.cross(ux0);
-    // ux1 = exp{ skew(z) } * ux0 = { I + skew(z) } * ux0
-    let ux1 = ux0.scale(dtheta.cos()).add(&uy0.scale(dtheta.sin()));
-    // uy1 = exp{ skew(z) } * uy0 = { I + skew(z) } * uy0
-    let uy1 = uy0.scale(dtheta.cos()).sub(&ux0.scale(dtheta.sin()));
-    // let invlen_z1 = T::one() / (z0.add(&dz).norm());
-    let r_mat = del_geo_core::mat3_col_major::from_axisangle_vec(&uz0.cross(dz).scale(invlen_z0));
-    let ux2 = del_geo_core::mat3_col_major::mult_vec(&r_mat, &ux1);
-    let uy2 = del_geo_core::mat3_col_major::mult_vec(&r_mat, &uy1);
-    let uz2 = del_geo_core::mat3_col_major::mult_vec(&r_mat, &uz0);
-    [ux2, uy2, uz2]
-     */
     let len_z0 = z0.norm();
     let invlen_z0 = T::one() / len_z0;
     let uz0 = z0.scale(invlen_z0);
@@ -230,6 +217,41 @@ where
     [u[0] / s, u[1] / s, u[2] / s]
 }
 
+pub fn c_rod_darboux<T>(
+    p: &[[T; 3]; 3],
+    x: &[[T; 3]; 2],
+) -> [T; 3]
+where
+    T: num_traits::Float,
+{
+    let zero = T::zero();
+    use del_geo_core::vec3::Vec3;
+    let (frma, _lena) = {
+        let z = p[1].sub(&p[0]);
+        let len = z.norm();
+        let uz = z.normalize();
+        let uy = uz.cross(&x[0]);
+        ([x[0], uy, uz], len)
+    };
+    let (frmb, _lenb) = {
+        let z = p[2].sub(&p[1]);
+        let len = z.norm();
+        let uz = z.normalize();
+        let uy = uz.cross(&x[1]);
+        ([x[1], uy, uz], len)
+    };
+    //
+    let s = T::one() + frma[0].dot(&frmb[0]) + frma[1].dot(&frmb[1]) + frma[2].dot(&frmb[2]);
+    let mut c = [zero; 3];
+    for iaxis in 0..3 {
+        let jaxis = (iaxis + 1) % 3;
+        let kaxis = (iaxis + 2) % 3;
+        let u = frma[jaxis].dot(&frmb[kaxis]) - frma[kaxis].dot(&frmb[jaxis]);
+        c[iaxis] = u / s;
+    }
+    c
+}
+
 /// Darboux vector in the reference configuration and its gradient
 pub fn cdc_rod_darboux<T>(
     p: &[[T; 3]; 3],
@@ -395,7 +417,7 @@ fn test_dot_rod_frame_gradient_and_hessian() {
             );
             [frma[0], frmb[0]]
         };
-        let (c0, _dc0dp, _dc0dt) = cdc_rod_darboux(&p0, &x0);
+        let c0 = c_rod_darboux(&p0, &x0);
         for iaxis in 0..3 {
             let v_num = (c4[iaxis] - c0[iaxis]) * 0.5 / eps;
             let v_ana = dc2dp[iaxis][0].dot(&dp[0])
@@ -410,6 +432,25 @@ fn test_dot_rod_frame_gradient_and_hessian() {
     }
 }
 
+fn w_darboux_rod_hair_approx_hessian<T>(
+    p: &[[T; 3]; 3],
+    x: &[[T; 3]; 2],
+    stiff_bendtwist: &[T; 3],
+    darboux0: &[T; 3],
+) -> T
+where
+    T: num_traits::Float + std::fmt::Debug,
+{
+    let one = T::one();
+    let half = one / (one + one);
+    let c = c_rod_darboux(p, x);
+    let r = [c[0] - darboux0[0], c[1] - darboux0[1], c[2] - darboux0[2]];
+    half
+        * (stiff_bendtwist[0] * r[0] * r[0]
+            + stiff_bendtwist[1] * r[1] * r[1]
+            + stiff_bendtwist[2] * r[2] * r[2])
+}
+
 fn wdwdwdw_darboux_rod_hair_approx_hessian<T>(
     p: &[[T; 3]; 3],
     x: &[[T; 3]; 2],
@@ -417,7 +458,7 @@ fn wdwdwdw_darboux_rod_hair_approx_hessian<T>(
     darboux0: &[T; 3],
 ) -> (T, [[T; 4]; 3], [[[T; 16]; 3]; 3])
 where
-    T: num_traits::Float,
+    T: num_traits::Float + std::fmt::Debug,
 {
     let zero = T::zero();
     let one = T::one();
@@ -739,6 +780,63 @@ where
     }
 }
 
+pub fn w_hair_system<T>(
+    vtx2xyz_ini: &[T],
+    vtx2xyz_def: &[T],
+    stiff_length: T,
+    stiff_bendtwist: &[T; 3],
+    vtx2framex_ini: &[T],
+    vtx2framex_def: &[T],
+) -> T
+where
+    T: num_traits::Float + std::fmt::Debug,
+{
+    let zero = T::zero();
+    let mut w = zero;
+    let num_vtx = vtx2xyz_ini.len() / 3;
+    for i0_vtx in 0..num_vtx - 1 {
+        let i1_vtx = i0_vtx + 1;
+        let length_ini = {
+            let p0 = del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i0_vtx);
+            let p1 = del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i1_vtx);
+            del_geo_core::edge3::length(&p0, &p1)
+        };
+        let p1 = [
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i1_vtx),
+        ];
+        let w_e = crate::spring3::w_squared_length_difference(stiff_length, &p1, length_ini);
+        w = w + w_e;
+    }
+
+    for i0_vtx in 0..num_vtx - 2 {
+        let i1_vtx = i0_vtx + 1;
+        let i2_vtx = i0_vtx + 2;
+        let p0 = [
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i2_vtx),
+        ];
+        let x0 = [
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_ini, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_ini, i1_vtx),
+        ];
+        let darboux0 = darboux_rod(&p0, &x0);
+        let p1 = [
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i2_vtx),
+        ];
+        let x1 = [
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_def, i1_vtx),
+        ];
+        let w_e = w_darboux_rod_hair_approx_hessian(&p1, &x1, &stiff_bendtwist, &darboux0);
+        w = w + w_e;
+    }
+    w
+}
+
 pub fn wdwddw_hair_system<T>(
     w: &mut T,
     dw: &mut [[T; 4]],
@@ -749,9 +847,9 @@ pub fn wdwddw_hair_system<T>(
     stiff_bendtwist: &[T; 3],
     vtx2framex_ini: &[T],
     vtx2framex_def: &[T],
-    diagonal_damp: T,
+    diagonal_damp: [T; 4],
 ) where
-    T: num_traits::Float,
+    T: num_traits::Float + std::fmt::Debug,
 {
     let zero = T::zero();
     *w = zero;
@@ -763,13 +861,13 @@ pub fn wdwddw_hair_system<T>(
     for i0_vtx in 0..num_vtx - 1 {
         let i1_vtx = i0_vtx + 1;
         let length_ini = {
-            let p0 = del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_ini, i0_vtx);
-            let p1 = del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_ini, i1_vtx);
+            let p0 = del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i0_vtx);
+            let p1 = del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i1_vtx);
             del_geo_core::edge3::length(&p0, &p1)
         };
         let p1 = [
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_def, i0_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_def, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i1_vtx),
         ];
         let (w_e, dw_e, ddw_e) =
             crate::spring3::wdwddw_squared_length_difference(stiff_length, &p1, length_ini);
@@ -795,26 +893,26 @@ pub fn wdwddw_hair_system<T>(
         let i1_vtx = i0_vtx + 1;
         let i2_vtx = i0_vtx + 2;
         let p0 = [
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_ini, i0_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_ini, i1_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_ini, i2_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_ini, i2_vtx),
         ];
         let x0 = [
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2framex_ini, i0_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2framex_ini, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_ini, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_ini, i1_vtx),
         ];
         let darboux0 = darboux_rod(&p0, &x0);
         let p1 = [
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_def, i0_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_def, i1_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2xyz_def, i2_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2xyz_def, i2_vtx),
         ];
         let x1 = [
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2framex_def, i0_vtx),
-            del_msh_cpu::vtx2xyz::to_array3(&vtx2framex_def, i1_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_def, i0_vtx),
+            del_msh_cpu::vtx2xyz::to_array3(vtx2framex_def, i1_vtx),
         ];
         let (w_e, dw_e, ddw_e) =
-            wdwdwdw_darboux_rod_hair_approx_hessian(&p1, &x1, &stiff_bendtwist, &darboux0);
+            wdwdwdw_darboux_rod_hair_approx_hessian(&p1, &x1, stiff_bendtwist, &darboux0);
         *w = (*w) + w_e;
         {
             use del_geo_core::vec4::Vec4;
@@ -825,10 +923,10 @@ pub fn wdwddw_hair_system<T>(
         ddw.merge_for_array_blk(&ddw_e, &[i0_vtx, i1_vtx, i2_vtx], &mut col2idx);
     }
     for i_vtx in 0..num_vtx {
-        ddw.row2val[i_vtx][0] = ddw.row2val[i_vtx][0] + diagonal_damp;
-        ddw.row2val[i_vtx][5] = ddw.row2val[i_vtx][5] + diagonal_damp;
-        ddw.row2val[i_vtx][10] = ddw.row2val[i_vtx][10] + diagonal_damp;
-        // ddw.row2val[i_vtx][15] += eps;
+        ddw.row2val[i_vtx][0] = ddw.row2val[i_vtx][0] + diagonal_damp[0];
+        ddw.row2val[i_vtx][5] = ddw.row2val[i_vtx][5] + diagonal_damp[1];
+        ddw.row2val[i_vtx][10] = ddw.row2val[i_vtx][10] + diagonal_damp[2];
+        ddw.row2val[i_vtx][15] = ddw.row2val[i_vtx][15] + diagonal_damp[3];
     }
 }
 
@@ -836,6 +934,7 @@ pub fn update_solution_hair<T>(
     vtx2xyz: &mut [T],
     vtx2framex: &mut [T],
     vec_x: &[[T; 4]],
+    scale: T,
     vtx2isfix: &[[i32; 4]],
 ) where
     T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
@@ -849,18 +948,16 @@ pub fn update_solution_hair<T>(
         let i1_vtx = i0_vtx + 1;
         let p0 = arrayref::array_ref![&vtx2xyz, i0_vtx * 3, 3];
         let p1 = arrayref::array_ref![&vtx2xyz, i1_vtx * 3, 3];
-        let z = p1.sub(&p0);
+        let z = p1.sub(p0);
         let dz = [
-            vec_x[i0_vtx][0] - vec_x[i1_vtx][0],
-            vec_x[i0_vtx][1] - vec_x[i1_vtx][1],
-            vec_x[i0_vtx][2] - vec_x[i1_vtx][2],
-        ];
-        let dtheta = -vec_x[i0_vtx][3];
-        let framex = arrayref::array_ref![&vtx2framex, i0_vtx * 3, 3];
-        // let tmp0 = z.dot(framex);
-        let frm = updated_rod_frame(framex, &z, &dz, dtheta);
-        // let tmp1 = z.add(&dz).normalize().dot(&frm[0]);
-        // println!("{} {} {}", i0_vtx, tmp0, tmp1);
+            vec_x[i1_vtx][0] - vec_x[i0_vtx][0],
+            vec_x[i1_vtx][1] - vec_x[i0_vtx][1],
+            vec_x[i1_vtx][2] - vec_x[i0_vtx][2],
+        ]
+        .scale(scale);
+        let dtheta = vec_x[i0_vtx][3] * scale;
+        let framex = arrayref::array_ref![&vtx2framex, i0_vtx * 3, 3].to_owned();
+        let frm = updated_rod_frame(&framex, &z, &dz, dtheta);
         vtx2framex[i0_vtx * 3] = frm[0][0];
         vtx2framex[i0_vtx * 3 + 1] = frm[0][1];
         vtx2framex[i0_vtx * 3 + 2] = frm[0][2];
@@ -870,11 +967,12 @@ pub fn update_solution_hair<T>(
             if vtx2isfix[i_vtx][i_dim] != 0 {
                 continue;
             };
-            vtx2xyz[i_vtx * 3 + i_dim] = vtx2xyz[i_vtx * 3 + i_dim] - vec_x[i_vtx][i_dim];
+            vtx2xyz[i_vtx * 3 + i_dim] = vtx2xyz[i_vtx * 3 + i_dim] + scale * vec_x[i_vtx][i_dim];
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn initialize_with_perturbation<T, Rng>(
     vtx2xyz_def: &mut [T],
     vtx2framex_def: &mut [T],
@@ -891,10 +989,10 @@ pub fn initialize_with_perturbation<T, Rng>(
 {
     let one = T::one();
     let two = one + one;
-
+    //
     let num_vtx = vtx2xyz_ini.len() / 3;
-    vtx2xyz_def.copy_from_slice(&vtx2xyz_ini);
-    vtx2framex_def.copy_from_slice(&vtx2framex_ini);
+    vtx2xyz_def.copy_from_slice(vtx2xyz_ini);
+    vtx2framex_def.copy_from_slice(vtx2framex_ini);
     for i_vtx in 0..num_vtx {
         for i_dim in 0..3 {
             if vtx2isfix[i_vtx][i_dim] == 0 {
@@ -909,7 +1007,7 @@ pub fn initialize_with_perturbation<T, Rng>(
             vtx2framex_def[i_vtx * 3 + 2] = vtx2framex_def[i_vtx * 3 + 2] + r[2];
         }
     }
-    orthonormalize_framex_for_hair(vtx2framex_def, &vtx2xyz_def);
+    orthonormalize_framex_for_hair(vtx2framex_def, vtx2xyz_def);
 }
 
 #[test]
@@ -1009,7 +1107,7 @@ fn test_hair() {
             &stiff_bendtwist,
             &vtx2framex_ini,
             &vtx2framex_def,
-            0.001,
+            [0.001, 0.001, 0.001, 0., ],
         );
         // set bc flag
         for i_vtx in 0..num_vtx {
@@ -1037,7 +1135,13 @@ fn test_hair() {
                 ddw.as_ref(),
             );
             // dbg!(hist.last().unwrap());
-            update_solution_hair(&mut vtx2xyz_def, &mut vtx2framex_def, &u_vec, &vtx2isfix);
+            update_solution_hair(
+                &mut vtx2xyz_def,
+                &mut vtx2framex_def,
+                &u_vec,
+                -1.0,
+                &vtx2isfix,
+            );
             // orthonormalize_framex_for_hair(&mut vtx2framex_def, &vtx2xyz_def);
             /*
             {
@@ -1056,22 +1160,73 @@ fn test_hair() {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn compute_velocity<T>(
+    vtx2velo: &mut [[T;4]],
+    dt: T,
+    damp: T,
+    vtx2isfix: &[[i32; 4]],
+    vtx2xyz_def: &[T],
+    vtx2xyz_tmp: &[T],
+    vtx2framex_def: &[T],
+    vtx2framex_tmp: &[T])
+where T: num_traits::Float
+{
+    let num_vtx = vtx2velo.len();
+    for i_vtx in 0..num_vtx {
+        for i_dim in 0..3 {
+            if vtx2isfix[i_vtx][i_dim] == 0 {
+                vtx2velo[i_vtx][i_dim] = (vtx2xyz_tmp[i_vtx * 3 + i_dim]
+                    - vtx2xyz_def[i_vtx * 3 + i_dim])
+                    / dt
+                    * damp;
+            }
+        }
+    }
+    for i_seg in 0..num_vtx - 1 {
+        let is_vtx = i_seg;
+        let ie_vtx = i_seg + 1;
+        let z0 = {
+            let ps = arrayref::array_ref![vtx2xyz_def, is_vtx*3, 3];
+            let pe = arrayref::array_ref![vtx2xyz_def, ie_vtx*3, 3];
+            pe.sub(ps).normalize()
+        };
+        let z2 = {
+            let ps = arrayref::array_ref![vtx2xyz_tmp, is_vtx*3, 3];
+            let pe = arrayref::array_ref![vtx2xyz_tmp, ie_vtx*3, 3];
+            pe.sub(ps).normalize()
+        };
+        let rot02 = del_geo_core::mat3_col_major::minimum_rotation_matrix(&z0, &z2);
+        let x0 = arrayref::array_ref![vtx2framex_def, is_vtx*3, 3];
+        let x1 = del_geo_core::mat3_col_major::mult_vec(&rot02, x0);
+        let x2 = arrayref::array_ref![vtx2framex_tmp, is_vtx*3, 3];
+        let y2 = z2.cross(x2);
+        let cos_t = x1.dot(x2);
+        let sin_t = x1.dot(&y2);
+        let t = sin_t.atan2(cos_t);
+        vtx2velo[is_vtx][3] = t / dt * damp;
+    }
+}
+
 pub struct RodSimulator<T>
 where
-    T: num_traits::Float,
+    T: num_traits::Float + 'static,
+    usize: num_traits::AsPrimitive<T>,
 {
     pub vtx2xyz_ini: Vec<T>,
     pub vtx2framex_ini: Vec<T>,
     pub vtx2xyz_def: Vec<T>,
     pub vtx2framex_def: Vec<T>,
-    pub vtx2velo: Vec<T>,
+    pub vtx2velo: Vec<[T; 4]>,
     pub vtx2xyz_tmp: Vec<T>,
+    pub vtx2framex_tmp: Vec<T>,
     //
     pub vtx2isfix: Vec<[i32; 4]>,
     //
     pub w: T,
     pub dw: Vec<[T; 4]>,
     pub ddw: crate::sparse_square::Matrix<[T; 16]>,
+    pub ilu: crate::sparse_ilu::Preconditioner<[T; 16]>,
     pub conv_ratio: T,
     //
     pub stiff_length: T,
@@ -1081,6 +1236,7 @@ where
 impl<T> RodSimulator<T>
 where
     T: num_traits::Float + std::fmt::Display + std::fmt::Debug,
+    usize: AsPrimitive<T>,
     rand::distr::StandardUniform: rand::distr::Distribution<T>,
 {
     pub fn initialize_with_perturbation(&mut self, pos_mag: T, framex_mag: T) {
@@ -1096,6 +1252,7 @@ where
             framex_mag,
             rng,
         );
+        self.vtx2velo.fill([T::zero(); 4]);
     }
 
     pub fn allocate_memory_for_linear_system(&mut self) {
@@ -1108,13 +1265,14 @@ where
             let (vtx2idx, idx2vtx) = del_msh_cpu::polyline::vtx2vtx_rods(&[0, num_vtx]);
             self.ddw = crate::sparse_square::Matrix::<[T; 16]>::from_vtx2vtx(&vtx2idx, &idx2vtx)
         };
+        self.ilu.initialize_iluk(&self.ddw, 10);
     }
 
     pub fn update_static(&mut self, pick_info: &Option<(usize, [T; 3])>) {
         let zero = T::zero();
         let one = T::one();
         let num_vtx = self.vtx2xyz_ini.len() / 3;
-        crate::rod3_darboux::wdwddw_hair_system(
+        wdwddw_hair_system(
             &mut self.w,
             &mut self.dw,
             self.ddw.as_ref_mut(),
@@ -1124,7 +1282,7 @@ where
             &self.stiff_bendtwist,
             &self.vtx2framex_ini,
             &self.vtx2framex_def,
-            T::zero(),
+            [T::zero(); 4],
         );
         if let Some((i_vtx, pos_goal)) = pick_info {
             let i_vtx = *i_vtx;
@@ -1166,6 +1324,7 @@ where
                 &mut self.vtx2xyz_def,
                 &mut self.vtx2framex_def,
                 &u_vec,
+                -one,
                 &self.vtx2isfix,
             );
         }
@@ -1174,17 +1333,23 @@ where
     pub fn update_dynamic(&mut self, pick_info: &Option<(usize, [T; 3])>, dt: T) {
         let zero = T::zero();
         let one = T::one();
+        let half = one / (one + one);
+        let one4th = one / (one + one + one + one);
+        let one64th = one4th * one4th * one4th;
+        //
+        let inertia_vtx = one / (dt * dt);
+        let inertia_frm = inertia_vtx * one64th;
+        //
         let num_vtx = self.vtx2xyz_ini.len() / 3;
-        for i_vtx in 0..num_vtx {
-            for i_dim in 0..3 {
-                if self.vtx2isfix[i_vtx][i_dim] != 0 {
-                    continue;
-                }
-                self.vtx2xyz_tmp[i_vtx * 3 + i_dim] =
-                    self.vtx2xyz_def[i_vtx * 3 + i_dim] + dt * self.vtx2velo[i_vtx * 3 + i_dim];
-            }
-        }
-        orthonormalize_framex_for_hair(&mut self.vtx2framex_def, &self.vtx2xyz_tmp);
+        self.vtx2xyz_tmp.copy_from_slice(&self.vtx2xyz_def);
+        self.vtx2framex_tmp.copy_from_slice(&self.vtx2framex_def);
+        update_solution_hair(
+            &mut self.vtx2xyz_tmp,
+            &mut self.vtx2framex_tmp,
+            &self.vtx2velo,
+            dt,
+            &self.vtx2isfix,
+        );
         wdwddw_hair_system(
             &mut self.w,
             &mut self.dw,
@@ -1194,8 +1359,8 @@ where
             self.stiff_length,
             &self.stiff_bendtwist,
             &self.vtx2framex_ini,
-            &self.vtx2framex_def,
-            T::zero(),
+            &self.vtx2framex_tmp,
+            [inertia_vtx, inertia_vtx, inertia_vtx, inertia_frm],
         );
         if let Some((i_vtx, pos_goal)) = pick_info {
             let i_vtx = *i_vtx;
@@ -1210,55 +1375,109 @@ where
                 arrayref::array_ref![self.vtx2xyz_tmp, i_vtx * 3, 3],
                 pos_goal,
             );
-            let c = del_geo_core::vec3::scale(&c, stiff);
-            self.dw[i_vtx][0] = self.dw[i_vtx][0] + c[0];
-            self.dw[i_vtx][1] = self.dw[i_vtx][1] + c[1];
-            self.dw[i_vtx][2] = self.dw[i_vtx][2] + c[2];
+            let d = del_geo_core::vec3::scale(&c, stiff);
+            self.dw[i_vtx][0] = self.dw[i_vtx][0] + d[0];
+            self.dw[i_vtx][1] = self.dw[i_vtx][1] + d[1];
+            self.dw[i_vtx][2] = self.dw[i_vtx][2] + d[2];
+            self.w = self.w + half * (c[0] * d[0] + c[1] * d[1] + c[2] * d[2]);
         }
-        // set inertia
-        {
-            let c = one / (dt * dt);
-            for i_vtx in 0..num_vtx {
-                self.ddw.row2val[i_vtx][0] = self.ddw.row2val[i_vtx][0] + c;
-                self.ddw.row2val[i_vtx][5] = self.ddw.row2val[i_vtx][5] + c;
-                self.ddw.row2val[i_vtx][10] = self.ddw.row2val[i_vtx][10] + c;
-            }
-        }
+        let w0 = self.w;
         // set bc flag
         crate::sparse_square::set_fix_dof_to_rhs_vector::<T, 4>(&mut self.dw, &self.vtx2isfix);
         self.ddw.set_fixed_dof::<4>(one, &self.vtx2isfix);
         //
+        let mut u_vec = vec![[zero; 4]; num_vtx];
         {
-            let mut u_vec = vec![[zero; 4]; num_vtx];
             let mut p_vec = vec![[zero; 4]; num_vtx];
             let mut ap_vec = vec![[zero; 4]; num_vtx];
-            let _hist = crate::sparse_square::conjugate_gradient(
-                &mut self.dw,
-                &mut u_vec,
-                &mut ap_vec,
-                &mut p_vec,
-                self.conv_ratio,
-                1000,
-                self.ddw.as_ref(),
-            );
-            // dbg!(hist.last().unwrap());
+            crate::sparse_ilu::copy_value(&mut self.ilu, &self.ddw);
+            let _hist = match crate::sparse_ilu::decompose::<T, 4, 16>(&mut self.ilu) {
+                Err(_s) => {
+                    // fallback cg method
+                    crate::sparse_square::conjugate_gradient(
+                        &mut self.dw,
+                        &mut u_vec,
+                        &mut ap_vec,
+                        &mut p_vec,
+                        self.conv_ratio,
+                        1000,
+                        self.ddw.as_ref(),
+                    )
+                }
+                Ok(()) => crate::sparse_square::preconditioned_conjugate_gradient(
+                    &mut self.dw,
+                    &mut u_vec,
+                    &mut ap_vec,
+                    &mut p_vec,
+                    self.conv_ratio,
+                    1000,
+                    &self.ddw,
+                    &self.ilu,
+                ),
+            };
             update_solution_hair(
                 &mut self.vtx2xyz_tmp,
-                &mut self.vtx2framex_def,
+                &mut self.vtx2framex_tmp,
                 &u_vec,
+                -one,
                 &self.vtx2isfix,
             );
         }
-        for i_vtx in 0..num_vtx {
-            for i_dim in 0..3 {
-                if self.vtx2isfix[i_vtx][i_dim] != 0 {
-                    continue;
-                }
-                self.vtx2velo[i_vtx * 3 + i_dim] = (self.vtx2xyz_tmp[i_vtx * 3 + i_dim]
-                    - self.vtx2xyz_def[i_vtx * 3 + i_dim])
-                    / dt;
-                self.vtx2xyz_def[i_vtx * 3 + i_dim] = self.vtx2xyz_tmp[i_vtx * 3 + i_dim];
+        let w1 = {
+            let mut w_elastic = w_hair_system(
+                &self.vtx2xyz_ini,
+                &self.vtx2xyz_tmp,
+                self.stiff_length,
+                &self.stiff_bendtwist,
+                &self.vtx2framex_ini,
+                &self.vtx2framex_tmp,
+            );
+            if let Some((i_vtx, pos_goal)) = pick_info {
+                let i_vtx = *i_vtx;
+                let one = T::one();
+                let two = one + one;
+                let stiff = two * two * two * two;
+                let c = del_geo_core::vec3::sub(
+                    arrayref::array_ref![self.vtx2xyz_tmp, i_vtx * 3, 3],
+                    pos_goal,
+                );
+                let d = del_geo_core::vec3::scale(&c, stiff);
+                w_elastic = w_elastic + half * (c[0] * d[0] + c[1] * d[1] + c[2] * d[2]);
             }
+            let half = one / (one + one);
+            let mut w_kinetic = T::zero();
+            for i_vtx in 0..num_vtx {
+                let x = u_vec[i_vtx][0];
+                let y = u_vec[i_vtx][1];
+                let z = u_vec[i_vtx][2];
+                let w = u_vec[i_vtx][3];
+                w_kinetic = w_kinetic
+                    + half
+                        * (x * x * inertia_vtx
+                            + y * y * inertia_vtx
+                            + z * z * inertia_vtx
+                            + w * w * inertia_frm);
+            }
+            w_elastic + w_kinetic
+        };
+        let eps = one4th * one4th * one4th * one4th;
+        self.vtx2velo.fill([zero; 4]);
+        if w0 * (one + eps) < w1 {
+            // this simulation is exploding
+            self.update_static(pick_info);
+            return;
         }
+        let damp = one - eps;
+        compute_velocity(
+            &mut self.vtx2velo,
+            dt, damp,
+            &self.vtx2isfix,
+            &self.vtx2xyz_def,
+            &self.vtx2xyz_tmp,
+            &self.vtx2framex_def,
+            &self.vtx2framex_tmp);
+
+        self.vtx2xyz_def.copy_from_slice(&self.vtx2xyz_tmp);
+        self.vtx2framex_def.copy_from_slice(&self.vtx2framex_tmp);
     }
 }
