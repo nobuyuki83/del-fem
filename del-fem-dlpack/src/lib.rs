@@ -37,10 +37,9 @@ fn solve(
     let vtx2xyz_shape = unsafe { std::slice::from_raw_parts(vtx2xyz.shape, vtx2xyz.ndim as usize) };
     let num_vtx = vtx2idx_shape[0];
     let num_dim = vtx2xyz_shape[1];
-    dbg!(num_vtx, num_dim);
+    // dbg!(num_vtx, num_dim);
 
     // DLPack を unsafe にアンラップ
-
     match vtx2idx.ctx.device_type {
         dlpack::device_type_codes::CPU => {
             /*
@@ -86,6 +85,7 @@ fn solve(
                 }
             }
             unsafe {
+                del_cudarc_sys::cuStreamSynchronize(stream);
                 del_cudarc_sys::cuStreamDestroy_v2(stream);
             }
         }
